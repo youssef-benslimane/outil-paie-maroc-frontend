@@ -11,6 +11,7 @@ import {
 import { fakeLogin } from "../api/fakeAuthApi";
 import { useAuth } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -31,7 +32,7 @@ export default function LoginPage() {
         case "RH":
           return navigate("/rh");
         case "EMPLOYE":
-          return navigate("/employe");
+          return navigate("/profil");
         case "CONFIGURATEUR":
           return navigate("/configurateur");
         default:
@@ -88,20 +89,14 @@ export default function LoginPage() {
               id="flexCheckDefault"
               label="Se souvenir de moi"
             />
-            <a href="#!" className="small">
-              Mot de passe oublié ?
-            </a>
+            <Link to="/mot-de-passe-oublie" className="small">
+              + Mot de passe oublié ?
+            </Link>
           </div>
 
           <MDBBtn className="w-100 mb-4" type="submit">
             Se connecter
           </MDBBtn>
-
-          <div className="text-center">
-            <p className="small mb-1">
-              Pas encore membre ? <a href="#!">Inscrivez-vous</a>
-            </p>
-          </div>
         </MDBContainer>
       </form>
     </div>
