@@ -120,6 +120,57 @@ export default function CreateEntityPage() {
               </>
             )}
 
+            {entity === "contrat" && (
+              <>
+                <MDBRow className="mb-3">
+                  <MDBCol>
+                    <MDBInput
+                      label="Code du contrat"
+                      name="code"
+                      onChange={handleChange}
+                    />
+                  </MDBCol>
+                  <MDBCol>
+                    <MDBInput
+                      label="Nom du contrat"
+                      name="nom"
+                      onChange={handleChange}
+                    />
+                  </MDBCol>
+                </MDBRow>
+                <MDBRow className="mb-3">
+                  <MDBCol>
+                    <MDBInput
+                      label="Période d’essai"
+                      name="essai"
+                      onChange={handleChange}
+                    />
+                  </MDBCol>
+                  <MDBCol>
+                    <MDBInput
+                      type="date"
+                      label="Date début"
+                      name="debut"
+                      onChange={handleChange}
+                    />
+                  </MDBCol>
+                  <MDBCol>
+                    <MDBInput
+                      type="date"
+                      label="Date fin"
+                      name="fin"
+                      onChange={handleChange}
+                    />
+                  </MDBCol>
+                </MDBRow>
+                <MDBInput
+                  label="Conditions spécifiques"
+                  name="conditions"
+                  onChange={handleChange}
+                />
+              </>
+            )}
+
             <div className="mt-4 d-flex justify-content-end">
               <MDBBtn
                 color="secondary"

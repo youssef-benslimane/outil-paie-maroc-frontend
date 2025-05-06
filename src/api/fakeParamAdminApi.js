@@ -15,7 +15,17 @@ let db = {
       fin: "2026-01-01",
     },
   ],
-  contrat: [],
+  contrat: [
+    {
+      id: 1,
+      code: "CDI",
+      nom: "Contrat Durée Indéterminée",
+      essai: "3 mois",
+      conditions: "Période renouvelable une fois.",
+      debut: "2025-01-01",
+      fin: "2026-01-01",
+    },
+  ],
   categorie: [],
   statut: [],
   unite: [],

@@ -1,3 +1,4 @@
+// src/pages/EditEntityPage.jsx
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
@@ -6,18 +7,19 @@ import {
   MDBRow,
   MDBCol,
   MDBBtn,
+  MDBTextArea,
 } from "mdb-react-ui-kit";
 import { getOne, updateOne } from "../api/fakeParamAdminApi.js";
 import SideBar from "../components/ConfigurateurSidebar.jsx";
 
 export default function EditEntityPage() {
-  const { entity, id } = useParams(); // e.g., entity = 'societe', id = '123'
+  const { entity, id } = useParams();
   const navigate = useNavigate();
   const [form, setForm] = useState(null);
 
   useEffect(() => {
     async function fetchData() {
-      const data = await getOne(entity, id);
+      const data = await getOne(entity, parseInt(id));
       setForm(data);
     }
     fetchData();
@@ -29,11 +31,11 @@ export default function EditEntityPage() {
   };
 
   const handleSubmit = async () => {
-    await updateOne(entity, id, form);
+    await updateOne(entity, parseInt(id), form);
     navigate("/configurateur/param-admin");
   };
 
-  if (!form) return null; // évite un affichage vide pendant le chargement
+  if (!form) return null;
 
   return (
     <div style={{ display: "flex" }}>
@@ -55,7 +57,7 @@ export default function EditEntityPage() {
                     <MDBInput
                       label="Nom de la société"
                       name="nom"
-                      value={form.nom}
+                      value={form.nom || ""}
                       onChange={handleChange}
                     />
                   </MDBCol>
@@ -63,7 +65,7 @@ export default function EditEntityPage() {
                     <MDBInput
                       label="Adresse"
                       name="adresse"
-                      value={form.adresse}
+                      value={form.adresse || ""}
                       onChange={handleChange}
                     />
                   </MDBCol>
@@ -74,7 +76,7 @@ export default function EditEntityPage() {
                     <MDBInput
                       label="Ville"
                       name="ville"
-                      value={form.ville}
+                      value={form.ville || ""}
                       onChange={handleChange}
                     />
                   </MDBCol>
@@ -82,7 +84,7 @@ export default function EditEntityPage() {
                     <MDBInput
                       label="Identifiant fiscal"
                       name="identFiscal"
-                      value={form.identFiscal}
+                      value={form.identFiscal || ""}
                       onChange={handleChange}
                     />
                   </MDBCol>
@@ -93,7 +95,7 @@ export default function EditEntityPage() {
                     <MDBInput
                       label="Numéro CNSS"
                       name="cnss"
-                      value={form.cnss}
+                      value={form.cnss || ""}
                       onChange={handleChange}
                     />
                   </MDBCol>
@@ -101,22 +103,19 @@ export default function EditEntityPage() {
                     <MDBInput
                       label="Numéro ICE"
                       name="ice"
-                      value={form.ice}
+                      value={form.ice || ""}
                       onChange={handleChange}
                     />
                   </MDBCol>
                 </MDBRow>
 
-                <MDBRow className="mb-3">
-                  <MDBCol>
-                    <MDBInput
-                      label="Numéro RC"
-                      name="rc"
-                      value={form.rc}
-                      onChange={handleChange}
-                    />
-                  </MDBCol>
-                </MDBRow>
+                <MDBInput
+                  label="Numéro RC"
+                  name="rc"
+                  wrapperClass="mb-3"
+                  value={form.rc || ""}
+                  onChange={handleChange}
+                />
 
                 <MDBRow className="mb-3">
                   <MDBCol>
@@ -124,7 +123,7 @@ export default function EditEntityPage() {
                       label="Date début"
                       type="date"
                       name="debut"
-                      value={form.debut}
+                      value={form.debut || ""}
                       onChange={handleChange}
                     />
                   </MDBCol>
@@ -133,11 +132,74 @@ export default function EditEntityPage() {
                       label="Date fin"
                       type="date"
                       name="fin"
-                      value={form.fin}
+                      value={form.fin || ""}
                       onChange={handleChange}
                     />
                   </MDBCol>
                 </MDBRow>
+              </>
+            )}
+
+            {entity === "contrat" && (
+              <>
+                <MDBRow className="mb-3">
+                  <MDBCol>
+                    <MDBInput
+                      label="Code du contrat"
+                      name="code"
+                      value={form.code || ""}
+                      onChange={handleChange}
+                    />
+                  </MDBCol>
+                  <MDBCol>
+                    <MDBInput
+                      label="Nom du contrat"
+                      name="nom"
+                      value={form.nom || ""}
+                      onChange={handleChange}
+                    />
+                  </MDBCol>
+                </MDBRow>
+
+                <MDBRow className="mb-3">
+                  <MDBCol>
+                    <MDBInput
+                      label="Période d’essai"
+                      name="essai"
+                      value={form.essai || ""}
+                      onChange={handleChange}
+                    />
+                  </MDBCol>
+                  <MDBCol>
+                    <MDBInput
+                      label="Date début"
+                      type="date"
+                      name="debut"
+                      value={form.debut || ""}
+                      onChange={handleChange}
+                    />
+                  </MDBCol>
+                </MDBRow>
+
+                <MDBRow className="mb-3">
+                  <MDBCol>
+                    <MDBInput
+                      label="Date fin"
+                      type="date"
+                      name="fin"
+                      value={form.fin || ""}
+                      onChange={handleChange}
+                    />
+                  </MDBCol>
+                </MDBRow>
+
+                <MDBTextArea
+                  label="Conditions spécifiques"
+                  name="conditions"
+                  rows={3}
+                  value={form.conditions || ""}
+                  onChange={handleChange}
+                />
               </>
             )}
 

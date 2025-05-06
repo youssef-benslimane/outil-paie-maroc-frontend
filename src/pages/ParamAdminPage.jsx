@@ -61,11 +61,21 @@ export default function ParamAdminPage() {
       "Date Fin",
       "Actions",
     ],
-    contrat: ["ID", "Code", "Nom", "Essai", "Actions"],
+    contrat: [
+      "ID",
+      "Code",
+      "Nom",
+      "Période d’essai",
+      "Conditions",
+      "Date Début",
+      "Date Fin",
+      "Actions",
+    ],
     categorie: ["ID", "Code", "Nom", "Actions"],
     statut: ["ID", "Code", "Nom", "Actions"],
     unite: ["ID", "Code", "Nom", "Actions"],
   };
+
   const fieldKeys = {
     societe: [
       "id",
@@ -78,7 +88,7 @@ export default function ParamAdminPage() {
       "debut",
       "fin",
     ],
-    contrat: ["id", "code", "nom", "essai"],
+    contrat: ["id", "code", "nom", "essai", "conditions", "debut", "fin"],
     categorie: ["id", "code", "nom"],
     statut: ["id", "code", "nom"],
     unite: ["id", "code", "nom"],
@@ -88,6 +98,7 @@ export default function ParamAdminPage() {
     setActiveTab(tab);
     setSearch("");
   };
+
   const handleSearch = (e) => setSearch(e.target.value);
 
   const filtered = data[activeTab].filter((row) =>
