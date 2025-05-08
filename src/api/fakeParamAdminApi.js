@@ -26,9 +26,50 @@ let db = {
       fin: "2026-01-01",
     },
   ],
-  categorie: [],
-  statut: [],
-  unite: [],
+  categorie: [
+    {
+      id: 1,
+      code: "CADRE",
+      nom: "Cadre",
+      description: "Catégorie cadre supérieur",
+      debut: "2025-01-01",
+      fin: "2025-12-31",
+    },
+  ],
+  statut: [
+    {
+      id: 1,
+      code: "ACTIF",
+      nom: "Actif",
+      description: "Salarié en activité normale",
+      debut: "2025-01-01",
+      fin: "9999-12-31", // sans date de fin par défaut
+    },
+  ],
+  unite: [
+    {
+      id: 1,
+      code: "DPT_RH",
+      nom: "Département RH",
+      type: "Département",
+      parent: null,
+      description: "Service des ressources humaines",
+      statut: "Actif",
+      debut: "2025-01-01",
+      fin: "9999-12-31",
+    },
+    {
+      id: 2,
+      code: "SRV_IT",
+      nom: "Service IT",
+      type: "Service",
+      parent: "DPT_RH",
+      description: "Support et développement informatique",
+      statut: "Actif",
+      debut: "2025-02-01",
+      fin: "9999-12-31",
+    },
+  ],
 };
 
 // Simule un délai réseau
@@ -64,5 +105,5 @@ export const deleteOne = async (entity, id) => {
 // Récupère un enregistrement unique
 export const getOne = async (entity, id) => {
   await delay(300);
-  return db[entity].find((item) => item.id === parseInt(id));
+  return db[entity].find((item) => item.id === parseInt(id, 10));
 };

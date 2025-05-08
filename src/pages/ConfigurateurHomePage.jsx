@@ -1,27 +1,38 @@
+// src/pages/ConfigurateurHomePage.jsx
 import React from "react";
-import { MDBContainer, MDBRow, MDBCol } from "mdb-react-ui-kit";
 import { useAuth } from "../contexts/AuthContext.jsx";
 import ConfigurateurSidebar from "../components/ConfigurateurSidebar.jsx";
+import { Box, Typography } from "@mui/material";
+
+const drawerWidth = 240;
 
 export default function ConfigurateurHomePage() {
   const { user } = useAuth();
 
   return (
-    <div className="d-flex">
-      {/* Contenu principal */}
-      {/* Espace principal centré */}
-      <MDBContainer
-        fluid
-        className="d-flex justify-content-center align-items-center"
-        style={{ minHeight: "100vh", marginLeft: "240px" }}
-      >
-        <h1>
-          Bienvenue {user.prenom} {user.nom}
-        </h1>
-      </MDBContainer>
-
-      {/* Sidebar à droite */}
+    <Box sx={{ display: "flex" }}>
+      {/* votre sidebar (fixe à 240px) */}
       <ConfigurateurSidebar />
-    </div>
+
+      {/* contenu principal */}
+      <Box
+        component="main"
+        sx={{
+          flexGrow: 1,
+          // décale et redimensionne le main en fonction de la sidebar
+          ml: { xs: 0, sm: `${drawerWidth}px` },
+          width: { xs: "100%", sm: `calc(100% - ${drawerWidth}px)` },
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          minHeight: "100vh",
+          p: 3,
+        }}
+      >
+        <Typography variant="h4" align="center">
+          Bienvenue {user.prenom} {user.nom}
+        </Typography>
+      </Box>
+    </Box>
   );
 }

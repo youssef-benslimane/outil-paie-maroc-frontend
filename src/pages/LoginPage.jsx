@@ -9,6 +9,7 @@ import {
   MDBIcon,
 } from "mdb-react-ui-kit";
 import { fakeLogin } from "../api/fakeAuthApi";
+// import { login as loginApi } from "../api/authApi";
 import { useAuth } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
@@ -25,6 +26,7 @@ export default function LoginPage() {
     setError(null);
     try {
       const { token, user } = await fakeLogin({ email, password });
+      //const { token, user } = await loginApi({ username: email, password });
       login(token, user);
       switch (user.role) {
         case "ADMIN":

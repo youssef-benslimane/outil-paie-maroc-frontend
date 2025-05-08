@@ -2,222 +2,392 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
-  MDBContainer,
-  MDBInput,
-  MDBRow,
-  MDBCol,
-  MDBBtn,
-  MDBTextArea,
-} from "mdb-react-ui-kit";
+  Box,
+  Toolbar,
+  Container,
+  Typography,
+  Stack,
+  TextField,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Button,
+  useTheme,
+  useMediaQuery,
+} from "@mui/material";
+import ConfigurateurSidebar from "../components/ConfigurateurSidebar.jsx";
 import { getOne, updateOne } from "../api/fakeParamAdminApi.js";
-import SideBar from "../components/ConfigurateurSidebar.jsx";
+
+const drawerWidth = 240;
 
 export default function EditEntityPage() {
   const { entity, id } = useParams();
   const navigate = useNavigate();
-  const [form, setForm] = useState(null);
+  const [form, setForm] = useState({});
+  const theme = useTheme();
+  const isMdUp = useMediaQuery(theme.breakpoints.up("md"));
 
+  // Chargement des données existantes
   useEffect(() => {
-    async function fetchData() {
-      const data = await getOne(entity, parseInt(id));
-      setForm(data);
-    }
-    fetchData();
+    (async () => {
+      const data = await getOne(entity, parseInt(id, 10));
+      setForm(data || {});
+    })();
   }, [entity, id]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setForm((f) => ({ ...f, [name]: value }));
+    setForm((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async () => {
-    await updateOne(entity, parseInt(id), form);
-    navigate("/configurateur/param-admin");
+    await updateOne(entity, parseInt(id, 10), form);
+    navigate("/configurateur/param-admin", { state: { tab: entity } });
   };
 
-  if (!form) return null;
-
   return (
-    <div style={{ display: "flex" }}>
-      <SideBar />
-      <div style={{ marginLeft: "240px", width: "100%" }}>
-        <MDBContainer
-          className="mt-5 d-flex flex-column align-items-center"
-          style={{ minHeight: "100vh" }}
+    <Box sx={{ display: "flex" }}>
+      <ConfigurateurSidebar />
+
+      <Box
+        component="main"
+        sx={{
+          flexGrow: 1,
+          width: { md: `calc(100% - ${drawerWidth}px)` },
+        }}
+      >
+        <Toolbar />
+        <Container
+          sx={{
+            mt: 5,
+            mb: 5,
+            ml: isMdUp ? `${drawerWidth}px` : 0,
+            px: 2,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            minHeight: "100vh",
+          }}
         >
-          <div style={{ maxWidth: "800px", width: "100%" }}>
-            <h3 className="mb-4 text-center">
-              Modifier l’enregistrement : {entity}
-            </h3>
+          <Box sx={{ width: "100%", maxWidth: 500 }}>
+            <Typography variant="h5" align="center" gutterBottom>
+              Modifier un(e) {entity}
+            </Typography>
 
-            {entity === "societe" && (
-              <>
-                <MDBRow className="mb-3">
-                  <MDBCol>
-                    <MDBInput
-                      label="Nom de la société"
-                      name="nom"
-                      value={form.nom || ""}
+            <Stack spacing={2}>
+              {/* Société */}
+              {entity === "societe" && (
+                <>
+                  {[
+                    { key: "nom", label: "Nom de la société" },
+                    { key: "adresse", label: "Adresse" },
+                    { key: "ville", label: "Ville" },
+                    { key: "identFiscal", label: "Identifiant fiscal" },
+                    { key: "cnss", label: "Numéro CNSS" },
+                    { key: "ice", label: "Numéro ICE" },
+                    { key: "rc", label: "Numéro RC" },
+                  ].map(({ key, label }) => (
+                    <TextField
+                      key={key}
+                      fullWidth
+                      label={label}
+                      name={key}
+                      value={form[key] || ""}
                       onChange={handleChange}
                     />
-                  </MDBCol>
-                  <MDBCol>
-                    <MDBInput
-                      label="Adresse"
-                      name="adresse"
-                      value={form.adresse || ""}
-                      onChange={handleChange}
-                    />
-                  </MDBCol>
-                </MDBRow>
+                  ))}
+                  <TextField
+                    fullWidth
+                    type="date"
+                    label="Date début"
+                    name="debut"
+                    InputLabelProps={{ shrink: true }}
+                    value={form.debut || ""}
+                    onChange={handleChange}
+                  />
+                  <TextField
+                    fullWidth
+                    type="date"
+                    label="Date fin"
+                    name="fin"
+                    InputLabelProps={{ shrink: true }}
+                    value={form.fin || ""}
+                    onChange={handleChange}
+                  />
+                </>
+              )}
 
-                <MDBRow className="mb-3">
-                  <MDBCol>
-                    <MDBInput
-                      label="Ville"
-                      name="ville"
-                      value={form.ville || ""}
-                      onChange={handleChange}
-                    />
-                  </MDBCol>
-                  <MDBCol>
-                    <MDBInput
-                      label="Identifiant fiscal"
-                      name="identFiscal"
-                      value={form.identFiscal || ""}
-                      onChange={handleChange}
-                    />
-                  </MDBCol>
-                </MDBRow>
-
-                <MDBRow className="mb-3">
-                  <MDBCol>
-                    <MDBInput
-                      label="Numéro CNSS"
-                      name="cnss"
-                      value={form.cnss || ""}
-                      onChange={handleChange}
-                    />
-                  </MDBCol>
-                  <MDBCol>
-                    <MDBInput
-                      label="Numéro ICE"
-                      name="ice"
-                      value={form.ice || ""}
-                      onChange={handleChange}
-                    />
-                  </MDBCol>
-                </MDBRow>
-
-                <MDBInput
-                  label="Numéro RC"
-                  name="rc"
-                  wrapperClass="mb-3"
-                  value={form.rc || ""}
-                  onChange={handleChange}
-                />
-
-                <MDBRow className="mb-3">
-                  <MDBCol>
-                    <MDBInput
-                      label="Date début"
-                      type="date"
-                      name="debut"
-                      value={form.debut || ""}
-                      onChange={handleChange}
-                    />
-                  </MDBCol>
-                  <MDBCol>
-                    <MDBInput
-                      label="Date fin"
-                      type="date"
-                      name="fin"
-                      value={form.fin || ""}
-                      onChange={handleChange}
-                    />
-                  </MDBCol>
-                </MDBRow>
-              </>
-            )}
-
-            {entity === "contrat" && (
-              <>
-                <MDBRow className="mb-3">
-                  <MDBCol>
-                    <MDBInput
-                      label="Code du contrat"
-                      name="code"
-                      value={form.code || ""}
-                      onChange={handleChange}
-                    />
-                  </MDBCol>
-                  <MDBCol>
-                    <MDBInput
-                      label="Nom du contrat"
-                      name="nom"
-                      value={form.nom || ""}
-                      onChange={handleChange}
-                    />
-                  </MDBCol>
-                </MDBRow>
-
-                <MDBRow className="mb-3">
-                  <MDBCol>
-                    <MDBInput
-                      label="Période d’essai"
+              {/* Contrat */}
+              {entity === "contrat" && (
+                <>
+                  <TextField
+                    fullWidth
+                    label="Code du contrat"
+                    name="code"
+                    value={form.code || ""}
+                    onChange={handleChange}
+                  />
+                  <TextField
+                    fullWidth
+                    label="Nom du contrat"
+                    name="nom"
+                    value={form.nom || ""}
+                    onChange={handleChange}
+                  />
+                  <FormControl fullWidth>
+                    <InputLabel id="essai-label">Période d’essai</InputLabel>
+                    <Select
+                      labelId="essai-label"
                       name="essai"
                       value={form.essai || ""}
+                      label="Période d’essai"
                       onChange={handleChange}
-                    />
-                  </MDBCol>
-                  <MDBCol>
-                    <MDBInput
-                      label="Date début"
-                      type="date"
-                      name="debut"
-                      value={form.debut || ""}
+                    >
+                      {["1 mois", "2 mois", "3 mois", "6 mois", "Aucune"].map(
+                        (opt) => (
+                          <MenuItem key={opt} value={opt}>
+                            {opt}
+                          </MenuItem>
+                        )
+                      )}
+                    </Select>
+                  </FormControl>
+                  <TextField
+                    fullWidth
+                    type="date"
+                    label="Date début"
+                    name="debut"
+                    InputLabelProps={{ shrink: true }}
+                    value={form.debut || ""}
+                    onChange={handleChange}
+                  />
+                  <TextField
+                    fullWidth
+                    type="date"
+                    label="Date fin"
+                    name="fin"
+                    InputLabelProps={{ shrink: true }}
+                    value={form.fin || ""}
+                    onChange={handleChange}
+                  />
+                  <TextField
+                    fullWidth
+                    label="Conditions spécifiques"
+                    name="conditions"
+                    value={form.conditions || ""}
+                    onChange={handleChange}
+                  />
+                </>
+              )}
+
+              {/* Catégorie de salarié */}
+              {entity === "categorie" && (
+                <>
+                  <TextField
+                    fullWidth
+                    label="Code de la catégorie"
+                    name="code"
+                    value={form.code || ""}
+                    onChange={handleChange}
+                  />
+                  <TextField
+                    fullWidth
+                    label="Nom de la catégorie"
+                    name="nom"
+                    value={form.nom || ""}
+                    onChange={handleChange}
+                  />
+                  <TextField
+                    fullWidth
+                    multiline
+                    rows={3}
+                    label="Description de la catégorie"
+                    name="description"
+                    value={form.description || ""}
+                    onChange={handleChange}
+                  />
+                  <TextField
+                    fullWidth
+                    type="date"
+                    label="Date début"
+                    name="debut"
+                    InputLabelProps={{ shrink: true }}
+                    value={form.debut || ""}
+                    onChange={handleChange}
+                  />
+                  <TextField
+                    fullWidth
+                    type="date"
+                    label="Date fin"
+                    name="fin"
+                    InputLabelProps={{ shrink: true }}
+                    value={form.fin || ""}
+                    onChange={handleChange}
+                  />
+                </>
+              )}
+
+              {/* Statut du salarié */}
+              {entity === "statut" && (
+                <>
+                  <TextField
+                    fullWidth
+                    label="Code du statut"
+                    name="code"
+                    value={form.code || ""}
+                    onChange={handleChange}
+                  />
+                  <TextField
+                    fullWidth
+                    label="Nom du statut"
+                    name="nom"
+                    value={form.nom || ""}
+                    onChange={handleChange}
+                  />
+                  <TextField
+                    fullWidth
+                    multiline
+                    rows={3}
+                    label="Description du statut"
+                    name="description"
+                    value={form.description || ""}
+                    onChange={handleChange}
+                  />
+                  <TextField
+                    fullWidth
+                    type="date"
+                    label="Date début"
+                    name="debut"
+                    InputLabelProps={{ shrink: true }}
+                    value={form.debut || ""}
+                    onChange={handleChange}
+                  />
+                  <TextField
+                    fullWidth
+                    type="date"
+                    label="Date fin"
+                    name="fin"
+                    InputLabelProps={{ shrink: true }}
+                    value={form.fin || ""}
+                    onChange={handleChange}
+                  />
+                </>
+              )}
+
+              {/* Unité organisationnelle */}
+              {entity === "unite" && (
+                <>
+                  <TextField
+                    fullWidth
+                    label="Code de l’unité"
+                    name="code"
+                    value={form.code || ""}
+                    onChange={handleChange}
+                  />
+                  <TextField
+                    fullWidth
+                    label="Nom de l’unité"
+                    name="nom"
+                    value={form.nom || ""}
+                    onChange={handleChange}
+                  />
+                  <FormControl fullWidth>
+                    <InputLabel id="type-unite-label">Type d’unité</InputLabel>
+                    <Select
+                      labelId="type-unite-label"
+                      name="type"
+                      value={form.type || ""}
+                      label="Type d’unité"
                       onChange={handleChange}
-                    />
-                  </MDBCol>
-                </MDBRow>
-
-                <MDBRow className="mb-3">
-                  <MDBCol>
-                    <MDBInput
-                      label="Date fin"
-                      type="date"
-                      name="fin"
-                      value={form.fin || ""}
+                    >
+                      <MenuItem value="Département">Département</MenuItem>
+                      <MenuItem value="Service">Service</MenuItem>
+                      <MenuItem value="Direction">Direction</MenuItem>
+                    </Select>
+                  </FormControl>
+                  <FormControl fullWidth>
+                    <InputLabel id="rattachement-label">
+                      Rattachement hiérarchique
+                    </InputLabel>
+                    <Select
+                      labelId="rattachement-label"
+                      name="parent"
+                      value={form.parent || ""}
+                      label="Rattachement hiérarchique"
                       onChange={handleChange}
-                    />
-                  </MDBCol>
-                </MDBRow>
+                    >
+                      <MenuItem value="">Aucun</MenuItem>
+                      <MenuItem value="1">Département RH</MenuItem>
+                      <MenuItem value="2">Service IT</MenuItem>
+                    </Select>
+                  </FormControl>
+                  <TextField
+                    fullWidth
+                    multiline
+                    rows={3}
+                    label="Description de l’unité"
+                    name="description"
+                    value={form.description || ""}
+                    onChange={handleChange}
+                  />
+                  <FormControl fullWidth>
+                    <InputLabel id="statut-unite-label">
+                      Statut de l’unité
+                    </InputLabel>
+                    <Select
+                      labelId="statut-unite-label"
+                      name="statut"
+                      value={form.statut || ""}
+                      label="Statut de l’unité"
+                      onChange={handleChange}
+                    >
+                      <MenuItem value="Actif">Actif</MenuItem>
+                      <MenuItem value="Inactif">Inactif</MenuItem>
+                    </Select>
+                  </FormControl>
+                  <TextField
+                    fullWidth
+                    type="date"
+                    label="Date début"
+                    name="debut"
+                    InputLabelProps={{ shrink: true }}
+                    value={form.debut || ""}
+                    onChange={handleChange}
+                  />
+                  <TextField
+                    fullWidth
+                    type="date"
+                    label="Date fin"
+                    name="fin"
+                    InputLabelProps={{ shrink: true }}
+                    value={form.fin || ""}
+                    onChange={handleChange}
+                  />
+                </>
+              )}
+            </Stack>
 
-                <MDBTextArea
-                  label="Conditions spécifiques"
-                  name="conditions"
-                  rows={3}
-                  value={form.conditions || ""}
-                  onChange={handleChange}
-                />
-              </>
-            )}
-
-            <div className="mt-4 d-flex justify-content-end">
-              <MDBBtn
-                color="secondary"
-                onClick={() => navigate(-1)}
-                className="me-2"
+            {/* Boutons d’action */}
+            <Box sx={{ mt: 4, display: "flex", justifyContent: "flex-end" }}>
+              <Button
+                variant="outlined"
+                sx={{ mr: 2 }}
+                onClick={() =>
+                  navigate("/configurateur/param-admin", {
+                    state: { tab: entity },
+                  })
+                }
               >
                 Annuler
-              </MDBBtn>
-              <MDBBtn color="success" onClick={handleSubmit}>
-                Sauvegarder les modifications
-              </MDBBtn>
-            </div>
-          </div>
-        </MDBContainer>
-      </div>
-    </div>
+              </Button>
+              <Button variant="contained" onClick={handleSubmit}>
+                Sauvegarder
+              </Button>
+            </Box>
+          </Box>
+        </Container>
+      </Box>
+    </Box>
   );
 }
