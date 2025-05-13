@@ -11,11 +11,17 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  Switch,
+  FormControlLabel,
   Button,
 } from "@mui/material";
-import { createOne } from "../api/fakeParamAdminApi.js";
+// API ParamAdmin
+import { createOne as createParam } from "../api/fakeParamAdminApi.js";
+// API Cotisations
+import { createOne as createCot } from "../api/fakeCotisationsApi.js";
 
 export const fieldDefinitions = {
+  // --- ParamAdmin ---
   societe: [
     { key: "nom", label: "Nom de la société", type: "text" },
     { key: "adresse", label: "Adresse", type: "text" },
@@ -79,6 +85,58 @@ export const fieldDefinitions = {
     { key: "debut", label: "Date début", type: "date" },
     { key: "fin", label: "Date fin", type: "date" },
   ],
+
+  // --- Paramétrage des cotisations ---
+  typeCot: [
+    { key: "nom", label: "Nom du type de cotisation", type: "text" },
+    { key: "description", label: "Description", type: "text-multiline" },
+    { key: "debut", label: "Date d’entrée en vigueur", type: "date" },
+    { key: "fin", label: "Date de fin de validité", type: "date" },
+  ],
+  cotisation: [
+    {
+      key: "type",
+      label: "Type de cotisation",
+      type: "select",
+      options: ["CNSS", "CIMR", "AMO"],
+    },
+    { key: "code", label: "Code de la cotisation", type: "text" },
+    { key: "nom", label: "Nom de la cotisation", type: "text" },
+    { key: "tauxSalarial", label: "Taux salarial (%)", type: "text" },
+    { key: "tauxPatronal", label: "Taux patronal (%)", type: "text" },
+    { key: "plafondSalarial", label: "Plafond salarial", type: "text" },
+    { key: "plafondPatronal", label: "Plafond patronal", type: "text" },
+    { key: "debut", label: "Date début", type: "date" },
+    { key: "fin", label: "Date fin", type: "date" },
+    {
+      key: "description",
+      label: "Informations complémentaires",
+      type: "text-multiline",
+    },
+  ],
+
+  // --- Paramétrage des absences ---
+  typeAbsence: [
+    { key: "nom", label: "Nom du type d’absence", type: "text" },
+    { key: "code", label: "Code de l’absence", type: "text" },
+    {
+      key: "justificatif",
+      label: "Justificatif requis",
+      type: "toggle",
+    },
+    {
+      key: "remunere",
+      label: "Absence rémunérée",
+      type: "toggle",
+    },
+    {
+      key: "impactSolde",
+      label: "Impact solde de congé",
+      type: "toggle",
+    },
+    { key: "debut", label: "Date de début", type: "date" },
+    { key: "fin", label: "Date de fin", type: "date" },
+  ],
 };
 
 export default function CreateEntityDialog({
@@ -89,27 +147,45 @@ export default function CreateEntityDialog({
 }) {
   const [form, setForm] = useState({});
 
-  // reset form à chaque ouverture
+  // Réinitialise le form à chaque ouverture
   useEffect(() => {
     if (open) setForm({});
   }, [open]);
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setForm((f) => ({ ...f, [name]: value }));
+    const { name, value, checked, type } = e.target;
+    setForm((f) => ({
+      ...f,
+      [name]: type === "checkbox" ? checked : value,
+    }));
   };
 
   const handleSubmit = async () => {
-    await createOne(entity, form);
+    // Choisir la bonne API selon l'entité
+    const createFn =
+      entity === "typeCot" || entity === "cotisation" ? createCot : createParam;
+    await createFn(entity, form);
     onCreated();
     onClose();
   };
 
   const fields = fieldDefinitions[entity] || [];
 
+  // Titre dynamique
+  const titles = {
+    societe: "Créer une Société",
+    contrat: "Créer un Type de contrat",
+    categorie: "Créer une Catégorie",
+    statut: "Créer un Statut",
+    unite: "Créer une Unité",
+    typeCot: "Créer un Type de cotisation",
+    cotisation: "Créer une Cotisation",
+    typeAbsence: "Créer un Type d’absence",
+  };
+
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
-      <DialogTitle>Créer un(e) {entity}</DialogTitle>
+      <DialogTitle>{titles[entity] || `Créer ${entity}`}</DialogTitle>
       <DialogContent dividers>
         <Stack spacing={2} sx={{ mt: 1 }}>
           {fields.map((f) => {
@@ -132,7 +208,8 @@ export default function CreateEntityDialog({
                   </Select>
                 </FormControl>
               );
-            } else if (f.type === "text-multiline") {
+            }
+            if (f.type === "text-multiline") {
               return (
                 <TextField
                   key={f.key}
@@ -145,20 +222,37 @@ export default function CreateEntityDialog({
                   onChange={handleChange}
                 />
               );
-            } else {
+            }
+            if (f.type === "toggle") {
               return (
-                <TextField
+                <FormControlLabel
                   key={f.key}
-                  fullWidth
-                  type={f.type}
+                  control={
+                    <Switch
+                      name={f.key}
+                      checked={!!form[f.key]}
+                      onChange={handleChange}
+                    />
+                  }
                   label={f.label}
-                  name={f.key}
-                  InputLabelProps={f.type === "date" ? { shrink: true } : {}}
-                  value={form[f.key] || ""}
-                  onChange={handleChange}
                 />
               );
             }
+            // type === "text" or "date"
+            return (
+              <TextField
+                key={f.key}
+                fullWidth
+                type={f.type}
+                label={f.label}
+                name={f.key}
+                InputLabelProps={
+                  f.type === "date" ? { shrink: true } : undefined
+                }
+                value={form[f.key] || ""}
+                onChange={handleChange}
+              />
+            );
           })}
         </Stack>
       </DialogContent>

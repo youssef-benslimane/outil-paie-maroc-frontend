@@ -37,11 +37,6 @@ const items = [
     label: "Paramétrage des données administratives",
   },
   {
-    to: "/configurateur/param-etats",
-    icon: <BarChartIcon />,
-    label: "Paramétrage des états",
-  },
-  {
     to: "/configurateur/param-cotisations",
     icon: <AttachMoneyIcon />,
     label: "Paramétrage des cotisations",
@@ -70,6 +65,11 @@ const items = [
     to: "/configurateur/param-mesures",
     icon: <PlaylistAddCheckIcon />,
     label: "Paramétrage des mesures et motifs",
+  },
+  {
+    to: "/configurateur/param-etats",
+    icon: <BarChartIcon />,
+    label: "Paramétrage des états",
   },
   {
     to: "/configurateur/param-profils",

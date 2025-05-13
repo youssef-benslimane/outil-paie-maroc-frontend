@@ -11,12 +11,22 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  FormControlLabel,
+  Switch,
   Button,
 } from "@mui/material";
-import { getOne, updateOne } from "../api/fakeParamAdminApi.js";
-
-// on réutilise fieldDefinitions de CreateEntityDialog
-import { fieldDefinitions } from "./CreateEntityDialog";
+// API ParamAdmin
+import {
+  getOne as getParam,
+  updateOne as updateParam,
+} from "../api/fakeParamAdminApi.js";
+// API Cotisations
+import {
+  getOne as getCot,
+  updateOne as updateCot,
+} from "../api/fakeCotisationsApi.js";
+// Définitions des champs (réutilise celles de CreateEntityDialog)
+import { fieldDefinitions } from "./CreateEntityDialog.jsx";
 
 export default function EditEntityDialog({
   open,
@@ -29,26 +39,47 @@ export default function EditEntityDialog({
 
   useEffect(() => {
     if (open && id != null) {
-      getOne(entity, id).then((data) => setForm(data || {}));
+      // Choisir la bonne API de lecture
+      const fetchFn =
+        entity === "typeCot" || entity === "cotisation" ? getCot : getParam;
+      fetchFn(entity, id).then((data) => setForm(data || {}));
     }
   }, [open, entity, id]);
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setForm((f) => ({ ...f, [name]: value }));
+    const { name, value, type, checked } = e.target;
+    setForm((f) => ({
+      ...f,
+      [name]: type === "checkbox" ? checked : value,
+    }));
   };
 
   const handleSubmit = async () => {
-    await updateOne(entity, id, form);
+    // Choisir la bonne API de mise à jour
+    const updateFn =
+      entity === "typeCot" || entity === "cotisation" ? updateCot : updateParam;
+    await updateFn(entity, id, form);
     onUpdated();
     onClose();
   };
 
   const fields = fieldDefinitions[entity] || [];
 
+  // Titres adaptés
+  const titles = {
+    societe: "Modifier une Société",
+    contrat: "Modifier un Type de contrat",
+    categorie: "Modifier une Catégorie",
+    statut: "Modifier un Statut",
+    unite: "Modifier une Unité",
+    typeCot: "Modifier un Type de cotisation",
+    cotisation: "Modifier une Cotisation",
+    typeAbsence: "Modifier un Type d’absence",
+  };
+
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
-      <DialogTitle>Modifier un(e) {entity}</DialogTitle>
+      <DialogTitle>{titles[entity] || `Modifier ${entity}`}</DialogTitle>
       <DialogContent dividers>
         <Stack spacing={2} sx={{ mt: 1 }}>
           {fields.map((f) => {
@@ -71,7 +102,8 @@ export default function EditEntityDialog({
                   </Select>
                 </FormControl>
               );
-            } else if (f.type === "text-multiline") {
+            }
+            if (f.type === "text-multiline") {
               return (
                 <TextField
                   key={f.key}
@@ -84,20 +116,37 @@ export default function EditEntityDialog({
                   onChange={handleChange}
                 />
               );
-            } else {
+            }
+            if (f.type === "toggle") {
               return (
-                <TextField
+                <FormControlLabel
                   key={f.key}
-                  fullWidth
-                  type={f.type}
+                  control={
+                    <Switch
+                      name={f.key}
+                      checked={!!form[f.key]}
+                      onChange={handleChange}
+                    />
+                  }
                   label={f.label}
-                  name={f.key}
-                  InputLabelProps={f.type === "date" ? { shrink: true } : {}}
-                  value={form[f.key] || ""}
-                  onChange={handleChange}
                 />
               );
             }
+            // type === "text" or "date"
+            return (
+              <TextField
+                key={f.key}
+                fullWidth
+                type={f.type}
+                label={f.label}
+                name={f.key}
+                InputLabelProps={
+                  f.type === "date" ? { shrink: true } : undefined
+                }
+                value={form[f.key] || ""}
+                onChange={handleChange}
+              />
+            );
           })}
         </Stack>
       </DialogContent>

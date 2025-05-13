@@ -8,6 +8,8 @@ import RhDashboard from "./pages/RhDashboard.jsx";
 import EmployeDashboard from "./pages/EmployeDashboard.jsx";
 import ConfigurateurHomePage from "./pages/ConfigurateurHomePage.jsx";
 import ParamAdminPage from "./pages/ParamAdminPage.jsx";
+import ParamCotisationPage from "./pages/ParamCotisationPage.jsx";
+import ParamAbsencePage from "./pages/ParamAbsencePage.jsx";
 import MonProfilPage from "./pages/MonProfilPage.jsx";
 import CreateEntityPage from "./pages/CreateEntityPage";
 import EditEntityPage from "./pages/EditEntityPage";
@@ -67,6 +69,24 @@ export default function App() {
           element={
             <ProtectedRoute allowedRoles={["CONFIGURATEUR"]}>
               <ParamAdminPage />
+            </ProtectedRoute>
+          }
+        />
+        {/* Paramétrage des cotisations */}
+        <Route
+          path="/configurateur/param-cotisations"
+          element={
+            <ProtectedRoute allowedRoles={["CONFIGURATEUR"]}>
+              <ParamCotisationPage />
+            </ProtectedRoute>
+          }
+        />
+        {/* Paramétrage des absences */}
+        <Route
+          path="/configurateur/param-absence"
+          element={
+            <ProtectedRoute allowedRoles={["CONFIGURATEUR"]}>
+              <ParamAbsencePage />
             </ProtectedRoute>
           }
         />
