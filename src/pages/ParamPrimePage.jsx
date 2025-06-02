@@ -1,4 +1,4 @@
-// src/pages/ParamAbsencePage.jsx
+// src/pages/ParamPrimePage.jsx
 import React, { useState, useEffect, useCallback } from "react";
 import { useLocation } from "react-router-dom";
 import {
@@ -21,6 +21,10 @@ import {
   Stack,
   TextField,
   Switch,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
   FormControlLabel,
   Snackbar,
   Alert,
@@ -40,88 +44,97 @@ import {
   createOne,
   updateOne,
   deleteOne,
-} from "../api/fakeAbsenceApi.js";
+} from "../api/fakePrimeApi.js";
 
-// Pour formater en JJ/MM/AAAA
+// format JJ/MM/AAAA
 function formatDateFR(d) {
-  if (!d) return "";
-  return new Date(d).toLocaleDateString("fr-FR");
+  return d ? new Date(d).toLocaleDateString("fr-FR") : "";
 }
 
 const drawerWidth = 240;
 
-// Comme un seul onglet, mais on garde la structure
-const tabConfig = [{ key: "typeAbsence", label: "Types d’absences" }];
+// un seul onglet « Primes & Indemnités »
+const tabKey = "prime";
+const columns = [
+  "Nom",
+  "Code interne",
+  "Type montant",
+  "Montant fixe",
+  "Taux (%)",
+  "Rubrique source",
+  "Valeur unitaire",
+  "Soumis cotisation",
+  "Soumis IR",
+  "Date Début",
+  "Date Fin",
+];
 
-const columns = {
-  typeAbsence: [
-    "Nom",
-    "Code",
-    "Justificatif requis",
-    "Absence rémunérée",
-    "Impact solde",
-    "Date Début",
-    "Date Fin",
-  ],
-};
-
-const fieldKeys = {
-  typeAbsence: [
-    "nom",
-    "code",
-    "justificatif",
-    "remunere",
-    "impactSolde",
-    "debut",
-    "fin",
-  ],
-};
+const fieldKeys = [
+  "nom",
+  "code",
+  "typeMontant",
+  "montantFixe",
+  "taux",
+  "rubriqueSource",
+  "valeurUnitaire",
+  "soumisCotisation",
+  "soumisIR",
+  "debut",
+  "fin",
+];
 
 const labelMap = {
-  nom: "Nom du type d’absence",
-  code: "Code",
-  justificatif: "Justificatif requis",
-  remunere: "Absence rémunérée",
-  impactSolde: "Impact solde de congé",
+  nom: "Nom de la prime/indemnité",
+  code: "Code interne",
+  typeMontant: "Type de montant",
+  montantFixe: "Montant fixe",
+  taux: "Taux (%)",
+  rubriqueSource: "Rubrique source",
+  valeurUnitaire: "Valeur unitaire",
+  soumisCotisation: "Soumis à cotisation",
+  soumisIR: "Soumis à l’IR",
   debut: "Date de début",
   fin: "Date de fin",
 };
 
-export default function ParamAbsencePage() {
+// options du select “Type de montant”
+const typeOptions = ["Nombre", "Montant", "Pourcentage"];
+// options pour rubriqueSource — à adapter selon votre domaine
+const rubriqueOptions = ["Salaire de base", "Primes précédentes"];
+
+export default function ParamPrimePage() {
   const theme = useTheme();
   const isMdUp = useMediaQuery(theme.breakpoints.up("md"));
   const location = useLocation();
-  const initialTab = location.state?.tab || "typeAbsence";
 
-  const [activeTab] = useState(initialTab);
-  const [data, setData] = useState({ typeAbsence: [] });
+  // états
+  const [data, setData] = useState([]);
   const [search, setSearch] = useState("");
 
-  // Snackbar feedback
+  // snackbar
   const [snack, setSnack] = useState({ open: false, msg: "", sev: "success" });
   const showSnack = (msg, sev = "success") =>
     setSnack({ open: true, msg, sev });
   const closeSnack = () => setSnack((s) => ({ ...s, open: false }));
 
-  // Dialogs create/edit/delete/split
+  // dialogs
   const [createOpen, setCreateOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [editId, setEditId] = useState(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
-
   const [splitOpen, setSplitOpen] = useState(false);
   const [splitForm, setSplitForm] = useState(null);
   const [splitDate, setSplitDate] = useState("");
-
   const [remainOpen, setRemainOpen] = useState(false);
   const [remainForm, setRemainForm] = useState({});
   const [newDebut, setNewDebut] = useState("");
   const [origFin, setOrigFin] = useState("");
 
+  // chargement
   const fetchData = useCallback(async () => {
-    const list = await getAll("typeAbsence");
-    setData({ typeAbsence: list });
+    const list = await getAll(tabKey);
+    setData(list);
   }, []);
 
   useEffect(() => {
@@ -129,36 +142,36 @@ export default function ParamAbsencePage() {
     window.history.replaceState({}, "");
   }, [fetchData]);
 
-  // Filtrage simple
-  const filtered = data.typeAbsence.filter((row) =>
+  // filtrage
+  const filtered = data.filter((row) =>
     Object.values(row).some((v) =>
       String(v).toLowerCase().includes(search.toLowerCase())
     )
   );
 
-  // Création
+  // create callback
   const onCreated = useCallback(() => {
     fetchData();
-    showSnack("Type d’absence créé");
+    showSnack("Prime créée");
   }, [fetchData]);
 
-  // Mise à jour
+  // update callback
   const onUpdated = useCallback(() => {
     fetchData();
-    showSnack("Type d’absence modifié");
+    showSnack("Prime modifiée");
   }, [fetchData]);
 
-  // Suppression
+  // delete confirm
   const confirmDelete = async () => {
-    await deleteOne("typeAbsence", deleteId);
+    await deleteOne(tabKey, deleteId);
     setDeleteOpen(false);
     fetchData();
-    showSnack("Type d’absence supprimé", "info");
+    showSnack("Prime supprimée", "info");
   };
 
-  // Découpage de période
+  // split period
   const handleSplitClick = async (id) => {
-    const rec = await getOne("typeAbsence", id);
+    const rec = await getOne(tabKey, id);
     setSplitForm(rec);
     setSplitDate(rec.fin);
     setSplitOpen(true);
@@ -171,9 +184,7 @@ export default function ParamAbsencePage() {
     if (ds <= d0 || ds >= d1) {
       return alert("Date hors période !");
     }
-    // on met à jour la fin
-    await updateOne("typeAbsence", splitForm.id, { fin: splitDate });
-    // préparation création seconde période
+    await updateOne(tabKey, splitForm.id, { fin: splitDate });
     const next = new Date(splitDate);
     next.setDate(next.getDate() + 1);
     const yyyy = next.getFullYear(),
@@ -181,10 +192,8 @@ export default function ParamAbsencePage() {
       dd = String(next.getDate()).padStart(2, "0");
     setNewDebut(`${yyyy}-${mm}-${dd}`);
     setOrigFin(splitForm.fin);
-    // on strip date pour formulaire
-    const keys = fieldKeys.typeAbsence.filter(
-      (k) => !["debut", "fin"].includes(k)
-    );
+    // prépare remainForm sans dates
+    const keys = fieldKeys.filter((k) => k !== "debut" && k !== "fin");
     const init = {};
     keys.forEach((k) => (init[k] = splitForm[k]));
     setRemainForm(init);
@@ -193,7 +202,7 @@ export default function ParamAbsencePage() {
     showSnack("Période découpée");
   };
   const confirmRemain = async () => {
-    await createOne("typeAbsence", {
+    await createOne(tabKey, {
       ...remainForm,
       debut: newDebut,
       fin: origFin,
@@ -218,7 +227,7 @@ export default function ParamAbsencePage() {
         <Toolbar />
         <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
           <Typography variant="h4" align="center" gutterBottom>
-            Paramétrage des absences
+            Paramétrage des Primes & Indemnités
           </Typography>
 
           {/* Actions */}
@@ -254,7 +263,7 @@ export default function ParamAbsencePage() {
               <Table size="small">
                 <TableHead>
                   <TableRow>
-                    {columns.typeAbsence.map((c) => (
+                    {columns.map((c) => (
                       <TableCell key={c}>{c}</TableCell>
                     ))}
                     <TableCell>Actions</TableCell>
@@ -263,7 +272,7 @@ export default function ParamAbsencePage() {
                 <TableBody>
                   {filtered.map((row) => (
                     <TableRow key={row.id}>
-                      {fieldKeys.typeAbsence.map((f) => (
+                      {fieldKeys.map((f) => (
                         <TableCell key={f}>
                           {f === "debut" || f === "fin"
                             ? formatDateFR(row[f])
@@ -312,13 +321,13 @@ export default function ParamAbsencePage() {
       {/* Create / Edit */}
       <CreateEntityDialog
         open={createOpen}
-        entity="typeAbsence"
+        entity={tabKey}
         onClose={() => setCreateOpen(false)}
         onCreated={onCreated}
       />
       <EditEntityDialog
         open={editOpen}
-        entity="typeAbsence"
+        entity={tabKey}
         id={editId}
         onClose={() => setEditOpen(false)}
         onUpdated={onUpdated}
@@ -327,7 +336,7 @@ export default function ParamAbsencePage() {
       {/* Delete */}
       <Dialog open={deleteOpen} onClose={() => setDeleteOpen(false)}>
         <DialogTitle>Confirmer la suppression</DialogTitle>
-        <DialogContent>Êtes-vous sûr ?</DialogContent>
+        <DialogContent>Voulez-vous supprimer cette prime ?</DialogContent>
         <DialogActions>
           <Button onClick={() => setDeleteOpen(false)}>Annuler</Button>
           <Button color="error" variant="contained" onClick={confirmDelete}>
@@ -375,17 +384,47 @@ export default function ParamAbsencePage() {
         <DialogTitle>Modifier la nouvelle période</DialogTitle>
         <DialogContent dividers>
           <Stack spacing={2} sx={{ mt: 1 }}>
-            {["nom", "code", "justificatif", "remunere", "impactSolde"].map(
-              (key) =>
-                key.startsWith("just") ||
-                key.startsWith("remu") ||
-                key.startsWith("impact") ? (
+            {[
+              "nom",
+              "code",
+              "typeMontant",
+              "montantFixe",
+              "taux",
+              "rubriqueSource",
+              "valeurUnitaire",
+              "soumisCotisation",
+              "soumisIR",
+            ].map((key) => {
+              // switch on field type
+              if (key === "typeMontant") {
+                return (
+                  <FormControl fullWidth key={key}>
+                    <InputLabel>{labelMap[key]}</InputLabel>
+                    <Select
+                      name={key}
+                      value={remainForm[key] || ""}
+                      label={labelMap[key]}
+                      onChange={(e) =>
+                        setRemainForm((f) => ({ ...f, [key]: e.target.value }))
+                      }
+                    >
+                      {typeOptions.map((opt) => (
+                        <MenuItem key={opt} value={opt}>
+                          {opt}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                );
+              }
+              if (["soumisCotisation", "soumisIR"].includes(key)) {
+                return (
                   <FormControlLabel
                     key={key}
                     control={
                       <Switch
                         name={key}
-                        checked={remainForm[key] || false}
+                        checked={!!remainForm[key]}
                         onChange={(e) =>
                           setRemainForm((f) => ({
                             ...f,
@@ -396,19 +435,44 @@ export default function ParamAbsencePage() {
                     }
                     label={labelMap[key]}
                   />
-                ) : (
-                  <TextField
-                    key={key}
-                    fullWidth
-                    label={labelMap[key]}
-                    name={key}
-                    value={remainForm[key] || ""}
-                    onChange={(e) =>
-                      setRemainForm((f) => ({ ...f, [key]: e.target.value }))
-                    }
-                  />
-                )
-            )}
+                );
+              }
+              // default numeric/text
+              return (
+                <TextField
+                  key={key}
+                  fullWidth
+                  type={
+                    ["montantFixe", "taux", "valeurUnitaire"].includes(key)
+                      ? "number"
+                      : "text"
+                  }
+                  label={labelMap[key]}
+                  name={key}
+                  InputLabelProps={
+                    ["montantFixe", "taux", "valeurUnitaire"].includes(key)
+                      ? undefined
+                      : key === "rubriqueSource"
+                      ? undefined
+                      : key === "nom" || key === "code"
+                      ? undefined
+                      : undefined
+                  }
+                  select={key === "rubriqueSource"}
+                  value={remainForm[key] || ""}
+                  onChange={(e) =>
+                    setRemainForm((f) => ({ ...f, [key]: e.target.value }))
+                  }
+                >
+                  {key === "rubriqueSource" &&
+                    rubriqueOptions.map((opt) => (
+                      <MenuItem key={opt} value={opt}>
+                        {opt}
+                      </MenuItem>
+                    ))}
+                </TextField>
+              );
+            })}
           </Stack>
         </DialogContent>
         <DialogActions>
@@ -419,7 +483,7 @@ export default function ParamAbsencePage() {
         </DialogActions>
       </Dialog>
 
-      {/* Feedback */}
+      {/* Snackbar */}
       <Snackbar
         open={snack.open}
         autoHideDuration={3000}

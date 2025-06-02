@@ -47,7 +47,7 @@ const items = [
     label: "Paramétrage des absences",
   },
   {
-    to: "/configurateur/param-primes",
+    to: "/configurateur/param-prime",
     icon: <EmojiEventsIcon />,
     label: "Paramétrage des primes et indemnités",
   },
@@ -62,17 +62,17 @@ const items = [
     label: "Paramétrage des données temps",
   },
   {
-    to: "/configurateur/param-mesures",
+    to: "/configurateur/param-motif-mesure",
     icon: <PlaylistAddCheckIcon />,
     label: "Paramétrage des mesures et motifs",
   },
   {
-    to: "/configurateur/param-etats",
+    to: "/configurateur/param-etat",
     icon: <BarChartIcon />,
     label: "Paramétrage des états",
   },
   {
-    to: "/configurateur/param-profils",
+    to: "/configurateur/param-profil-grille",
     icon: <LayersIcon />,
     label: "Paramétrage des profils et grilles salariales",
   },
