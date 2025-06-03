@@ -20,17 +20,25 @@ export default function ParamEtatPage() {
 
   // Define each tile’s label and navigation path:
   const tiles = [
-    { key: "bulletin", label: "Bulletin de paie", path: "/bulletin-paie" },
-    { key: "journal", label: "Journal de paie", path: "/journal-paie" },
+    {
+      key: "bulletin",
+      label: "Bulletin de paie",
+      path: "/configurateur/param-bulletin-paie",
+    },
+    {
+      key: "journal",
+      label: "Journal de paie",
+      path: "/configurateur/param-journal-paie",
+    },
     {
       key: "attestationTravail",
       label: "Attestation de travail",
-      path: "/attestation-travail",
+      path: "/configurateur/param-attestation-travail",
     },
     {
       key: "attestationSalaire",
       label: "Attestation de salaire",
-      path: "/attestation-salaire",
+      path: "/configurateur/param-attestation-salaire",
     },
   ];
 

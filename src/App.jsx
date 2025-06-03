@@ -14,6 +14,10 @@ import ParamAbsencePage from "./pages/ParamAbsencePage.jsx";
 import ParamTempsPage from "./pages/ParamTempsPage.jsx";
 import ParamMotifMesurePage from "./pages/ParamMotifMesurePage.jsx";
 import ParamEtatPage from "./pages/ParamEtatPage.jsx";
+import ParamBulletinPaiePage from "./pages/ParamBulletinPaiePage.jsx";
+import ParamJournalPaiePage from "./pages/ParamJournalPaiePage.jsx";
+import ParamAttestationSalairePage from "./pages/ParamAttestationSalairePage.jsx";
+import ParamAttestationTravailPage from "./pages/ParamAttestationTravailPage.jsx";
 import ParamBaremeIr from "./pages/ParamBaremeIr.jsx";
 import ParamProfilGrillePage from "./pages/ParamProfilGrillePage.jsx";
 import MonProfilPage from "./pages/MonProfilPage.jsx";
@@ -138,6 +142,42 @@ export default function App() {
           element={
             <ProtectedRoute allowedRoles={["CONFIGURATEUR"]}>
               <ParamEtatPage />
+            </ProtectedRoute>
+          }
+        />
+        {/* Paramétrage Bulletin de paie */}
+        <Route
+          path="/configurateur/param-bulletin-paie"
+          element={
+            <ProtectedRoute allowedRoles={["CONFIGURATEUR"]}>
+              <ParamBulletinPaiePage />
+            </ProtectedRoute>
+          }
+        />
+        {/* Paramétrage Journal de paie */}
+        <Route
+          path="/configurateur/param-journal-paie"
+          element={
+            <ProtectedRoute allowedRoles={["CONFIGURATEUR"]}>
+              <ParamJournalPaiePage />
+            </ProtectedRoute>
+          }
+        />
+        {/* Paramétrage Attestation Salaire */}
+        <Route
+          path="/configurateur/param-attestation-salaire"
+          element={
+            <ProtectedRoute allowedRoles={["CONFIGURATEUR"]}>
+              <ParamAttestationSalairePage />
+            </ProtectedRoute>
+          }
+        />
+        {/* Paramétrage Attestation Travail */}
+        <Route
+          path="/configurateur/param-attestation-travail"
+          element={
+            <ProtectedRoute allowedRoles={["CONFIGURATEUR"]}>
+              <ParamAttestationTravailPage />
             </ProtectedRoute>
           }
         />
