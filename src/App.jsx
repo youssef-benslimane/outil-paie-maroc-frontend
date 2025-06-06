@@ -24,6 +24,9 @@ import MonProfilPage from "./pages/MonProfilPage.jsx";
 import CreateEntityPage from "./pages/CreateEntityPage";
 import EditEntityPage from "./pages/EditEntityPage";
 import ProtectedRoute from "./routes/ProtectedRoute.jsx";
+import AdministrateurHomePage from "./pages/AdministrateurHomePage.jsx";
+import GestionUtilisateursPage from "./pages/GestionUtilisateursPage.jsx";
+import RhHomePage from "./pages/RhHomePage.jsx";
 
 export default function App() {
   return (
@@ -40,16 +43,25 @@ export default function App() {
           path="/admin"
           element={
             <ProtectedRoute allowedRoles={["ADMIN"]}>
-              <AdminDashboard />
+              <AdministrateurHomePage />
             </ProtectedRoute>
           }
         />
 
+        {/* Gestions des utilisateurs */}
+        <Route
+          path="/admin/gestion-users"
+          element={
+            <ProtectedRoute allowedRoles={["ADMIN"]}>
+              <GestionUtilisateursPage />
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="/rh"
           element={
             <ProtectedRoute allowedRoles={["RH"]}>
-              <RhDashboard />
+              <RhHomePage />
             </ProtectedRoute>
           }
         />
