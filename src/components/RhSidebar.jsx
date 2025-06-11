@@ -38,6 +38,11 @@ const items = [
     label: "Recherche Salarié",
   },
   {
+    to: "/rh/gestion-admin-salaries",
+    icon: <PeopleIcon />,
+    label: "Embauche des salariés",
+  },
+  {
     to: "/rh/elements-variables",
     icon: <DescriptionIcon />,
     label: "Éléments variables de paie",
@@ -52,11 +57,7 @@ const items = [
     icon: <SendIcon />,
     label: "Envoi des bulletins",
   },
-  {
-    to: "/rh/gestion-admin-salaries",
-    icon: <PeopleIcon />,
-    label: "Gestion admin des salariés",
-  },
+
   {
     to: "/rh/chargement-primes-retenues",
     icon: <AttachMoneyIcon />,

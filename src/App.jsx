@@ -26,6 +26,11 @@ import EditEntityPage from "./pages/EditEntityPage";
 import ProtectedRoute from "./routes/ProtectedRoute.jsx";
 import AdministrateurHomePage from "./pages/AdministrateurHomePage.jsx";
 import GestionUtilisateursPage from "./pages/GestionUtilisateursPage.jsx";
+import RechercheSalariePage from "./pages/RechercheSalariePage.jsx";
+import ElementsVariablesPaiePage from "./pages/ElementsVariablesPaiePage.jsx";
+import CalculPaiePage from "./pages/CalculPaiePage.jsx";
+import EnvoiBulletinsPage from "./pages/EnvoiBulletinsPage.jsx";
+import GestionAdminSalariesPage from "./pages/GestionAdminSalariesPage.jsx";
 import RhHomePage from "./pages/RhHomePage.jsx";
 
 export default function App() {
@@ -62,6 +67,56 @@ export default function App() {
           element={
             <ProtectedRoute allowedRoles={["RH"]}>
               <RhHomePage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Recherche d'un salarié */}
+        <Route
+          path="/rh/recherche-salarie"
+          element={
+            <ProtectedRoute allowedRoles={["RH"]}>
+              <RechercheSalariePage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Eléments variables de paie */}
+        <Route
+          path="/rh/elements-variables"
+          element={
+            <ProtectedRoute allowedRoles={["RH"]}>
+              <ElementsVariablesPaiePage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Calcul de paie */}
+        <Route
+          path="/rh/calcul-paie"
+          element={
+            <ProtectedRoute allowedRoles={["RH"]}>
+              <CalculPaiePage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Envoi des bulletins */}
+        <Route
+          path="/rh/envoi-bulletins"
+          element={
+            <ProtectedRoute allowedRoles={["RH"]}>
+              <EnvoiBulletinsPage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Gestion administrative des salariés */}
+        <Route
+          path="/rh/gestion-admin-salaries"
+          element={
+            <ProtectedRoute allowedRoles={["RH"]}>
+              <GestionAdminSalariesPage />
             </ProtectedRoute>
           }
         />
