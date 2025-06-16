@@ -15,7 +15,7 @@ import {
   FormControlLabel,
   Button,
 } from "@mui/material";
-import { createOne as createParam } from "../api/fakeParamAdminApi.js";
+import { createOne as createParam } from "../api/paramAdminApi.js";
 import { createOne as createCot } from "../api/fakeCotisationsApi.js";
 import { createOne as createAbs } from "../api/fakeAbsenceApi.js";
 import { createOne as createPrime } from "../api/fakePrimeApi.js";
@@ -33,67 +33,77 @@ import {
 
 export const fieldDefinitions = {
   societe: [
-    { key: "nom", label: "Nom de la société", type: "text" },
+    { key: "nomSociete", label: "Nom de la société", type: "text" },
     { key: "adresse", label: "Adresse", type: "text" },
     { key: "ville", label: "Ville", type: "text" },
-    { key: "identFiscal", label: "Identifiant fiscal", type: "text" },
-    { key: "cnss", label: "Numéro CNSS", type: "text" },
-    { key: "ice", label: "Numéro ICE", type: "text" },
-    { key: "rc", label: "Numéro RC", type: "text" },
-    { key: "debut", label: "Date début", type: "date" },
-    { key: "fin", label: "Date fin", type: "date" },
+    { key: "identifiantFiscal", label: "Identifiant fiscal", type: "text" },
+    { key: "numeroCnss", label: "Numéro CNSS", type: "text" },
+    { key: "numeroIce", label: "Numéro ICE", type: "text" },
+    { key: "numeroRc", label: "Numéro RC", type: "text" },
+    { key: "dateDebut", label: "Date début", type: "date" },
+    { key: "dateFin", label: "Date fin", type: "date" },
+    { key: "nomBanque", label: "Nom de la banque", type: "text" },
+    { key: "rib", label: "RIB", type: "text" },
+    { key: "bic", label: "BIC", type: "text" },
   ],
   contrat: [
-    { key: "code", label: "Code du contrat", type: "text" },
-    { key: "nom", label: "Nom du contrat", type: "text" },
+    { key: "codeContrat", label: "Code du contrat", type: "text" },
+    { key: "nomContrat", label: "Nom du contrat", type: "text" },
     {
-      key: "essai",
+      key: "periodeEssai",
       label: "Période d’essai",
       type: "select",
       options: ["1 mois", "2 mois", "3 mois", "6 mois", "Aucune"],
     },
-    { key: "debut", label: "Date début", type: "date" },
-    { key: "fin", label: "Date fin", type: "date" },
-    { key: "conditions", label: "Conditions spécifiques", type: "text" },
+    { key: "dateDebut", label: "Date début", type: "date" },
+    { key: "dateFin", label: "Date fin", type: "date" },
+    {
+      key: "conditionsSpecifiques",
+      label: "Conditions spécifiques",
+      type: "text",
+    },
   ],
   categorie: [
-    { key: "code", label: "Code de la catégorie", type: "text" },
-    { key: "nom", label: "Nom de la catégorie", type: "text" },
-    { key: "description", label: "Description", type: "text-multiline" },
-    { key: "debut", label: "Date début", type: "date" },
-    { key: "fin", label: "Date fin", type: "date" },
+    { key: "codeCategorie", label: "Code catégorie", type: "text" },
+    { key: "nomCategorie", label: "Nom catégorie", type: "text" },
+    {
+      key: "descriptionCategorie",
+      label: "Description",
+      type: "text-multiline",
+    },
+    { key: "dateDebut", label: "Date début", type: "date" },
+    { key: "dateFin", label: "Date fin", type: "date" },
   ],
   statut: [
-    { key: "code", label: "Code du statut", type: "text" },
-    { key: "nom", label: "Nom du statut", type: "text" },
-    { key: "description", label: "Description", type: "text-multiline" },
-    { key: "debut", label: "Date début", type: "date" },
-    { key: "fin", label: "Date fin", type: "date" },
+    { key: "codeStatut", label: "Code statut", type: "text" },
+    { key: "nomStatut", label: "Nom statut", type: "text" },
+    { key: "descriptionStatut", label: "Description", type: "text-multiline" },
+    {
+      key: "raisonInactivite",
+      label: "Raison inactivité",
+      type: "text-multiline",
+    },
+    { key: "dateDebut", label: "Date début", type: "date" },
+    { key: "dateFin", label: "Date fin", type: "date" },
   ],
   unite: [
-    { key: "code", label: "Code de l’unité", type: "text" },
-    { key: "nom", label: "Nom de l’unité", type: "text" },
+    { key: "codeUnite", label: "Code unité", type: "text" },
+    { key: "nomUnite", label: "Nom unité", type: "text" },
     {
-      key: "type",
-      label: "Type d’unité",
+      key: "typeUnite",
+      label: "Type unité",
       type: "select",
       options: ["Département", "Service", "Direction"],
     },
     {
-      key: "parent",
-      label: "Rattachement hiérarchique",
+      key: "uniteParent",
+      label: "Unité parent",
       type: "select",
-      options: ["Aucun", "Département RH", "Service IT"],
+      options: ["None" /*ou liste dynamique*/],
     },
-    { key: "description", label: "Description", type: "text-multiline" },
-    {
-      key: "statut",
-      label: "Statut de l’unité",
-      type: "select",
-      options: ["Actif", "Inactif"],
-    },
-    { key: "debut", label: "Date début", type: "date" },
-    { key: "fin", label: "Date fin", type: "date" },
+    { key: "descriptionUnite", label: "Description", type: "text-multiline" },
+    { key: "dateDebut", label: "Date début", type: "date" },
+    { key: "dateFin", label: "Date fin", type: "date" },
   ],
   typeCot: [
     { key: "nom", label: "Nom du type de cotisation", type: "text" },
@@ -254,27 +264,24 @@ export default function CreateEntityDialog({
     if (!open) return;
     setForm({});
 
-    // Si on crée un "motif", on charge les mesures
     if (entity === "motifs") {
       (async () => {
         const allMesures = await getAllMesures("mesures");
-        const opts = allMesures.map((m) => ({
-          value: m.code,
-          label: `${m.code} – ${m.nom}`,
-        }));
-        setMesureOptions(opts);
+        setMesureOptions(
+          allMesures.map((m) => ({
+            value: m.code,
+            label: `${m.code} – ${m.nom}`,
+          }))
+        );
       })();
     }
 
-    // Si on crée une "grille", on charge les profils
     if (entity === "grilles") {
       (async () => {
         const allProfils = await getAllProfils("profils");
-        const opts = allProfils.map((p) => ({
-          value: p.nom,
-          label: p.nom,
-        }));
-        setProfilOptions(opts);
+        setProfilOptions(
+          allProfils.map((p) => ({ value: p.nom, label: p.nom }))
+        );
       })();
     }
   }, [open, entity]);
@@ -321,7 +328,35 @@ export default function CreateEntityDialog({
       default:
         createFn = createParam;
     }
-    await createFn(entity, form);
+    // préparer le payload
+    const payload = { ...form };
+    if (entity === "societe") {
+      // générer un ID aléatoire
+      const randomNum = Math.floor(10000 + Math.random() * 90000);
+      payload.idSociete = `SI${randomNum}`;
+      // nomBanque, rib, bic seront pris depuis le formulaire
+    }
+    if (entity === "categorie") {
+      // générer un ID unique
+      const random = Math.floor(10000 + Math.random() * 90000);
+      payload.idCategorie = `CAT${random}`;
+      payload.echelons = [];
+      payload.profilsSalariaux = [];
+    }
+    if (entity === "statut") {
+      const rnd = Math.floor(10000 + Math.random() * 90000);
+      payload.idStatut = `ST${rnd}`;
+      payload.categoriesSalariales = [];
+      payload.echelons = [];
+      payload.profilsSalariaux = [];
+    }
+    if (entity === "unite") {
+      payload.idUnite = id;
+      payload.sousUnites = payload.sousUnites ?? [];
+      payload.employes = payload.employes ?? [];
+      payload.societe = payload.societe ?? null;
+    }
+    await createFn(entity, payload);
     onCreated();
     onClose();
   };
@@ -352,7 +387,6 @@ export default function CreateEntityDialog({
       <DialogContent dividers>
         <Stack spacing={2} sx={{ mt: 1 }}>
           {fields.map((f) => {
-            // Si on est sur "motifs" et champ "mesureCode", utiliser mesureOptions
             if (entity === "motifs" && f.key === "mesureCode") {
               return (
                 <FormControl fullWidth key={f.key}>
@@ -374,7 +408,6 @@ export default function CreateEntityDialog({
               );
             }
 
-            // Si on est sur "grilles" et champ "profil", utiliser profilOptions
             if (entity === "grilles" && f.key === "profil") {
               return (
                 <FormControl fullWidth key={f.key}>

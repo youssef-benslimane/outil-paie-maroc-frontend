@@ -1,6 +1,9 @@
 // src/pages/LoginPage.jsx
+
 import React, { useState } from "react";
+
 import { useNavigate, Link as RouterLink } from "react-router-dom";
+
 import {
   Box,
   Container,
@@ -12,42 +15,61 @@ import {
   Alert,
   Link,
 } from "@mui/material";
-import { fakeLogin } from "../api/fakeAuthApi.js";
+
+import { loginRequest } from "../api/authApi.js";
+
 import { useAuth } from "../contexts/AuthContext.jsx";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
+
   const [password, setPassword] = useState("");
+
   const [remember, setRemember] = useState(false);
+
   const [error, setError] = useState("");
+
   const { login } = useAuth();
+
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     setError("");
 
     try {
-      // Appel à fakeLogin
-      const { token, user } = await fakeLogin({ email, password });
+      // Appel à l'API réelle via authApi.js (POST /api/login)
 
-      // Stocke le token et l'utilisateur
-      login(token, user);
+      const { token, user } = await loginRequest({ email, password });
+
+      // Stocke le token et l’utilisateur dans le contexte (avec option "remember me")
+
+      login(token, user, remember);
 
       // Redirection selon le rôle
+
       switch (user.role) {
         case "ADMIN":
           navigate("/admin");
+
           break;
+
         case "RH":
           navigate("/rh");
+
           break;
+
         case "EMPLOYE":
           navigate("/employe");
+
           break;
+
         case "CONFIGURATEUR":
           navigate("/configurateur");
+
           break;
+
         default:
           navigate("/login");
       }
@@ -60,10 +82,15 @@ export default function LoginPage() {
     <Box
       sx={{
         height: "100vh",
+
         bgcolor: "background.default",
+
         display: "flex",
+
         alignItems: "center",
+
         justifyContent: "center",
+
         p: 2,
       }}
     >
@@ -71,8 +98,11 @@ export default function LoginPage() {
         maxWidth="xs"
         sx={{
           p: 3,
+
           bgcolor: "background.paper",
+
           borderRadius: 1,
+
           boxShadow: 3,
         }}
       >
@@ -115,11 +145,15 @@ export default function LoginPage() {
           <Box
             sx={{
               display: "flex",
+
               justifyContent: "flex-end",
+
               alignItems: "center",
+
               mt: 1,
             }}
           >
+            {/* Si la page Mot de passe oublié existe, le lien doit pointer vers "/mot-de-passe-oublie" */}
             <Link
               component={RouterLink}
               to="/mot-de-passe-oublie"

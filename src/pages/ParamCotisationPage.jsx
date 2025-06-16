@@ -46,7 +46,7 @@ const drawerWidth = 240;
 
 // Configuration des onglets
 const tabConfig = [
-  { key: "typeCot", label: "Type de cotisations" },
+  { key: "typeCot", label: "Type de cotisation" },
   { key: "cotisation", label: "Paramétrage de cotisation" },
 ];
 

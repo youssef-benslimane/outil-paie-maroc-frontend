@@ -15,11 +15,10 @@ import {
   Switch,
   Button,
 } from "@mui/material";
-// APIs existantes
 import {
   getOne as getParam,
   updateOne as updateParam,
-} from "../api/fakeParamAdminApi.js";
+} from "../api/paramAdminApi.js";
 import {
   getOne as getCot,
   updateOne as updateCot,
@@ -44,7 +43,6 @@ import {
   getOne as getMotifMesure,
   updateOne as updateMotifMesure,
 } from "../api/fakeMotifMesureApi.js";
-// Nouvelle API Profils & Grilles
 import {
   getAll as getAllProfils,
   getOne as getProfil,
@@ -67,11 +65,9 @@ export default function EditEntityDialog({
   useEffect(() => {
     if (!open || id == null) return;
 
-    // Si on modifie une "grille", charger les profils pour le select
     if (entity === "grilles") {
       (async () => {
         const profils = await getAllProfils("profils");
-        // On stocke un tableau d'options { value: nom, label: nom }
         setProfilOptions(profils.map((p) => ({ value: p.nom, label: p.nom })));
       })();
     }
@@ -110,7 +106,9 @@ export default function EditEntityDialog({
         fetchFn = getParam;
     }
 
-    fetchFn(entity, id).then((data) => setForm(data || {}));
+    fetchFn(entity, id).then((data) => {
+      setForm({ ...data });
+    });
   }, [open, entity, id]);
 
   const handleChange = (e) => {
@@ -152,7 +150,9 @@ export default function EditEntityDialog({
       default:
         updateFn = updateParam;
     }
-    await updateFn(entity, id, form);
+
+    const payload = { ...form };
+    await updateFn(entity, id, payload);
     onUpdated();
     onClose();
   };
@@ -184,7 +184,6 @@ export default function EditEntityDialog({
       <DialogContent dividers>
         <Stack spacing={2} sx={{ mt: 1 }}>
           {fields.map((f) => {
-            // Si on modifie une grille et que c'est le champ "profil", on affiche la liste dynamique
             if (entity === "grilles" && f.key === "profil") {
               return (
                 <FormControl fullWidth key={f.key}>

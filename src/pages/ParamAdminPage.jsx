@@ -40,7 +40,7 @@ import {
   updateOne,
   createOne,
   deleteOne,
-} from "../api/fakeParamAdminApi.js";
+} from "../api/paramAdminApi.js";
 
 const drawerWidth = 240;
 
@@ -54,12 +54,13 @@ const tabConfig = [
 
 const columns = {
   societe: [
-    "Nom",
+    "Nom Société",
+    "Adresse",
     "Ville",
-    "ID Fiscal",
-    "CNSS",
-    "ICE",
-    "RC",
+    "Identifiant fiscal",
+    "Numéro CNSS",
+    "Numéro ICE",
+    "Numéro RC",
     "Date Début",
     "Date Fin",
   ],
@@ -82,45 +83,78 @@ const columns = {
     "Code statut",
     "Nom statut",
     "Description",
+    "Raison inactivité",
     "Date Début",
     "Date Fin",
   ],
   unite: [
-    "Code unité",
-    "Nom unité",
-    "Type unité",
-    "Rattachement",
-    "Description",
-    "Statut",
-    "Date Début",
-    "Date Fin",
+    "Code unité", // 1
+    "Nom unité", // 2
+    "Type unité", // 3
+    "Unité parent", // 4
+    "Description", // 5
+    "Date Début", // 6
+    "Date Fin", // 7
   ],
 };
 
 const fieldKeys = {
-  societe: ["nom", "ville", "identFiscal", "cnss", "ice", "rc", "debut", "fin"],
-  contrat: ["code", "nom", "essai", "conditions", "debut", "fin"],
-  categorie: ["code", "nom", "description", "debut", "fin"],
-  statut: ["code", "nom", "description", "debut", "fin"],
+  societe: [
+    "nomSociete",
+    "adresse",
+    "ville",
+    "identifiantFiscal",
+    "numeroCnss",
+    "numeroIce",
+    "numeroRc",
+    "dateDebut",
+    "dateFin",
+  ],
+  contrat: [
+    "codeContrat",
+    "nomContrat",
+    "periodeEssai",
+    "conditionsSpecifiques",
+    "dateDebut",
+    "dateFin",
+  ],
+  categorie: [
+    "codeCategorie",
+    "nomCategorie",
+    "descriptionCategorie",
+    "dateDebut",
+    "dateFin",
+  ],
+  statut: [
+    "codeStatut",
+    "nomStatut",
+    "descriptionStatut",
+    "raisonInactivite",
+    "dateDebut",
+    "dateFin",
+  ],
   unite: [
-    "code",
-    "nom",
-    "type",
-    "parent",
-    "description",
-    "statut",
-    "debut",
-    "fin",
+    "codeUnite", // 1 → Code unité
+    "nomUnite", // 2 → Nom unité
+    "typeUnite", // 3 → Type unité
+    "uniteParent", // 4 → Unité parent
+    "descriptionUnite", // 5 → Description
+    "dateDebut", // 6 → Date Début
+    "dateFin", // 7 → Date Fin
   ],
 };
 
 const labelMap = {
-  nom: "Nom",
+  idSociete: "ID Société",
+  nomSociete: "Nom Société",
+  adresse: "Adresse",
   ville: "Ville",
-  identFiscal: "Identifiant fiscal",
-  cnss: "Numéro CNSS",
-  ice: "Numéro ICE",
-  rc: "Numéro RC",
+  identifiantFiscal: "Identifiant fiscal",
+  numeroCnss: "Numéro CNSS",
+  numeroIce: "Numéro ICE",
+  numeroRc: "Numéro RC",
+  dateDebut: "Date Début",
+  dateFin: "Date Fin",
   code: "Code",
   essai: "Période d’essai",
   conditions: "Conditions spécifiques",
@@ -128,18 +162,40 @@ const labelMap = {
   type: "Type d’unité",
   parent: "Rattachement hiérarchique",
   statut: "Statut de l’unité",
+  codeContrat: "Code du contrat",
+  nomContrat: "Nom du contrat",
+  periodeEssai: "Période d’essai",
+  conditionsSpecifiques: "Conditions",
+  codeCategorie: "Code catégorie",
+  nomCategorie: "Nom catégorie",
+  descriptionCategorie: "Description",
+  codeStatut: "Code statut",
+  nomStatut: "Nom statut",
+  descriptionStatut: "Description",
+  raisonInactivite: "Raison inactivité",
+  codeUnite: "Code unité",
+  nomUnite: "Nom unité",
+  typeUnite: "Type unité",
+  uniteParent: "Unité parent",
+  descriptionUnite: "Description",
+};
+
+const entityApiMap = {
+  societe: "societes",
+  contrat: "types-contrats",
+  categorie: "categories-salariales",
+  statut: "statuts-salariaux",
+  unite: "unites",
 };
 
 function formatDateFR(dateStr) {
   if (!dateStr) return "";
   const d = new Date(dateStr);
-  // options fr-FR garantissent jour/mois/année
   return d.toLocaleDateString("fr-FR");
 }
 
 export default function ParamAdminPage() {
   const theme = useTheme();
-  // mobile layout up to 899px, desktop from 900px
   const isMdUp = useMediaQuery(theme.breakpoints.up("md"));
   const location = useLocation();
   const initialTab = location.state?.tab || "societe";
@@ -154,7 +210,6 @@ export default function ParamAdminPage() {
     unite: [],
   });
 
-  // Snackbar
   const [snackOpen, setSnackOpen] = useState(false);
   const [snackMsg, setSnackMsg] = useState("");
   const [snackSeverity, setSnackSeverity] = useState("success");
@@ -165,16 +220,14 @@ export default function ParamAdminPage() {
   };
   const handleSnackClose = () => setSnackOpen(false);
 
-  // Create dialog
   const [createOpen, setCreateOpen] = useState(false);
   const openCreate = () => setCreateOpen(true);
   const closeCreate = () => setCreateOpen(false);
   const onCreated = useCallback(() => {
     fetchData(activeTab);
-    showSnack("Enregistrement créé", "success");
+    showSnack("Enregistrement créé");
   }, [activeTab]);
 
-  // Edit dialog
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editDialogId, setEditDialogId] = useState(null);
   const openEditDialog = (id) => {
@@ -187,10 +240,9 @@ export default function ParamAdminPage() {
   };
   const onUpdated = useCallback(() => {
     fetchData(activeTab);
-    showSnack("Modification enregistrée", "success");
+    showSnack("Modification enregistrée");
   }, [activeTab]);
 
-  // Delete dialog
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
   const openDeleteDialog = (id) => {
@@ -208,7 +260,6 @@ export default function ParamAdminPage() {
     showSnack("Enregistrement supprimé", "info");
   };
 
-  // Split-period dialog
   const [splitOpen, setSplitOpen] = useState(false);
   const [splitForm, setSplitForm] = useState(null);
   const [splitDate, setSplitDate] = useState("");
@@ -222,7 +273,7 @@ export default function ParamAdminPage() {
   const handleSplitClick = async (id) => {
     const rec = await getOne(activeTab, id);
     setSplitForm(rec);
-    setSplitDate(rec.fin);
+    setSplitDate(rec.dateFin || rec.fin);
     setSplitOpen(true);
   };
   const handleSplitCancel = () => {
@@ -232,31 +283,35 @@ export default function ParamAdminPage() {
   };
   const handleSplitConfirm = async () => {
     if (!splitForm) return;
-    const d0 = new Date(splitForm.debut),
-      d1 = new Date(splitForm.fin),
-      ds = new Date(splitDate);
+    const d0 = new Date(splitForm.dateDebut || splitForm.debut);
+    const d1 = new Date(splitForm.dateFin || splitForm.fin);
+    const ds = new Date(splitDate);
     if (ds < d0 || ds >= d1) {
       setErrorMsg("Date de séparation hors période !");
       setErrorOpen(true);
       return;
     }
-    await updateOne(activeTab, splitForm.id, { fin: splitDate });
+    await updateOne(activeTab, splitForm.idSociete ?? splitForm.id, {
+      dateFin: splitDate,
+      fin: splitDate,
+    });
     const next = new Date(splitDate);
     next.setDate(next.getDate() + 1);
-    const yyyy = next.getFullYear(),
-      mm = String(next.getMonth() + 1).padStart(2, "0"),
-      dd = String(next.getDate()).padStart(2, "0");
+    const yyyy = next.getFullYear();
+    const mm = String(next.getMonth() + 1).padStart(2, "0");
+    const dd = String(next.getDate()).padStart(2, "0");
     setNewDebut(`${yyyy}-${mm}-${dd}`);
-    setOrigFin(splitForm.fin);
+    setOrigFin(splitForm.dateFin || splitForm.fin);
     const keys = fieldKeys[activeTab].filter(
-      (k) => k !== "debut" && k !== "fin"
+      (k) =>
+        k !== "dateDebut" && k !== "dateFin" && k !== "debut" && k !== "fin"
     );
     const init = {};
     keys.forEach((k) => (init[k] = splitForm[k]));
     setRemainForm(init);
     setSplitOpen(false);
     setRemainOpen(true);
-    showSnack("Période découpée", "success");
+    showSnack("Période découpée");
   };
   const handleRemainChange = (e) => {
     const { name, value } = e.target;
@@ -265,17 +320,20 @@ export default function ParamAdminPage() {
   const handleRemainConfirm = async () => {
     await createOne(activeTab, {
       ...remainForm,
+      dateDebut: newDebut,
+      dateFin: origFin,
       debut: newDebut,
       fin: origFin,
     });
     setRemainOpen(false);
     fetchData(activeTab);
-    showSnack("Nouvelle période enregistrée", "success");
+    showSnack("Nouvelle période enregistrée");
   };
 
-  // Fetch data
   const fetchData = async (tab) => {
-    const list = await getAll(tab);
+    const apiEntity = entityApiMap[tab] || tab;
+    const list = await getAll(apiEntity);
+
     setData((d) => ({ ...d, [tab]: list }));
   };
   useEffect(() => {
@@ -292,7 +350,6 @@ export default function ParamAdminPage() {
   return (
     <Box sx={{ display: "flex" }}>
       <ConfigurateurSidebar />
-
       <Box
         component="main"
         sx={{
@@ -316,8 +373,6 @@ export default function ParamAdminPage() {
           >
             Paramétrage des données administratives
           </Typography>
-
-          {/* Onglets + barre de recherche + bouton Créer */}
           <Box
             sx={{
               display: "flex",
@@ -349,16 +404,12 @@ export default function ParamAdminPage() {
                   sx={{
                     fontWeight: 600,
                     textTransform: "none",
-                    fontSize: {
-                      xs: "0.75rem",
-                      md: "1rem",
-                    },
+                    fontSize: { xs: "0.75rem", md: "1rem" },
                     minWidth: 80,
                   }}
                 />
               ))}
             </Tabs>
-
             <Box
               sx={{
                 display: "flex",
@@ -384,8 +435,6 @@ export default function ParamAdminPage() {
               </Button>
             </Box>
           </Box>
-
-          {/* Tableau */}
           <Paper>
             <Box sx={{ overflowX: "auto" }}>
               <Table size="small">
@@ -398,45 +447,56 @@ export default function ParamAdminPage() {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {filtered.map((row) => (
-                    <TableRow key={row.id}>
-                      {fieldKeys[activeTab].map((f) => (
-                        <TableCell key={f}>
-                          {f === "debut" || f === "fin"
-                            ? formatDateFR(row[f])
-                            : row[f]}
+                  {filtered.map((row) => {
+                    // choisir une clé unique suivant l’entité
+                    const rowId =
+                      row.id ??
+                      row.idSociete ??
+                      row.idCategorie ??
+                      row.idStatut ??
+                      row.idUnite ?? // ← ici
+                      row.codeContrat ??
+                      row.codeCategorie ??
+                      row.codeStatut ??
+                      row.codeUnite;
+                    return (
+                      <TableRow key={rowId}>
+                        {fieldKeys[activeTab].map((f) => (
+                          <TableCell key={f}>
+                            {(f === "dateDebut" || f === "dateFin") && row[f]
+                              ? formatDateFR(row[f])
+                              : row[f]}
+                          </TableCell>
+                        ))}
+                        <TableCell>
+                          <IconButton
+                            size="small"
+                            onClick={() => handleSplitClick(rowId)}
+                          >
+                            <EditCalendarIcon fontSize="small" />
+                          </IconButton>
+                          <IconButton
+                            size="small"
+                            onClick={() => openEditDialog(rowId)}
+                          >
+                            <EditIcon fontSize="small" />
+                          </IconButton>
+                          <IconButton
+                            size="small"
+                            onClick={() => openDeleteDialog(rowId)}
+                          >
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
                         </TableCell>
-                      ))}
-                      <TableCell>
-                        <IconButton
-                          size="small"
-                          onClick={() => handleSplitClick(row.id)}
-                        >
-                          <EditCalendarIcon fontSize="small" />
-                        </IconButton>
-                        <IconButton
-                          size="small"
-                          onClick={() => openEditDialog(row.id)}
-                        >
-                          <EditIcon fontSize="small" />
-                        </IconButton>
-                        <IconButton
-                          size="small"
-                          onClick={() => openDeleteDialog(row.id)}
-                        >
-                          <DeleteIcon fontSize="small" />
-                        </IconButton>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </Box>
           </Paper>
         </Container>
       </Box>
-
-      {/* Dialogs */}
       <CreateEntityDialog
         open={createOpen}
         entity={activeTab}
@@ -532,8 +592,6 @@ export default function ParamAdminPage() {
           </Button>
         </DialogActions>
       </Dialog>
-
-      {/* Snackbar */}
       <Snackbar
         open={snackOpen}
         autoHideDuration={3000}
