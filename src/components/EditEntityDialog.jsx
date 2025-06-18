@@ -11,8 +11,8 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  FormControlLabel,
   Switch,
+  FormControlLabel,
   Button,
 } from "@mui/material";
 import {
@@ -22,7 +22,7 @@ import {
 import {
   getOne as getCot,
   updateOne as updateCot,
-} from "../api/fakeCotisationsApi.js";
+} from "../api/paramCotisationsApi.js";
 import {
   getOne as getAbs,
   updateOne as updateAbs,
@@ -60,18 +60,25 @@ export default function EditEntityDialog({
   onUpdated,
 }) {
   const [form, setForm] = useState({});
+  const [mesureOptions, setMesureOptions] = useState([]);
   const [profilOptions, setProfilOptions] = useState([]);
 
   useEffect(() => {
     if (!open || id == null) return;
-
-    if (entity === "grilles") {
+    if (entity === "motifs") {
       (async () => {
-        const profils = await getAllProfils("profils");
-        setProfilOptions(profils.map((p) => ({ value: p.nom, label: p.nom })));
+        const list = await getAllMesures("mesures");
+        setMesureOptions(
+          list.map((m) => ({ value: m.code, label: `${m.code} – ${m.nom}` }))
+        );
       })();
     }
-
+    if (entity === "grilles") {
+      (async () => {
+        const list = await getAllProfils("profils");
+        setProfilOptions(list.map((p) => ({ value: p.nom, label: p.nom })));
+      })();
+    }
     let fetchFn;
     switch (entity) {
       case "typeCot":
@@ -105,10 +112,7 @@ export default function EditEntityDialog({
       default:
         fetchFn = getParam;
     }
-
-    fetchFn(entity, id).then((data) => {
-      setForm({ ...data });
-    });
+    fetchFn(entity, id).then((data) => setForm({ ...data }));
   }, [open, entity, id]);
 
   const handleChange = (e) => {
@@ -152,12 +156,18 @@ export default function EditEntityDialog({
     }
 
     const payload = { ...form };
-    await updateFn(entity, id, payload);
+    if (entity === "typeCot") {
+      delete payload.cotisations;
+      delete payload.idTypeCotisation;
+    }
+
+    const targetId = id ?? form.idTypeCotisation;
+    await updateFn(entity, targetId, payload);
+
     onUpdated();
     onClose();
   };
 
-  const fields = fieldDefinitions[entity] || [];
   const titles = {
     societe: "Modifier une Société",
     contrat: "Modifier un Type de contrat",
@@ -171,20 +181,24 @@ export default function EditEntityDialog({
     tranches: "Modifier une Tranche IR",
     plafonds: "Modifier une Constante / Plafond IR",
     holidays: "Modifier un Jour férié",
-    absenceTypes: "Modifier un Type d’absence pour congés",
+    absenceTypes: "Modifier un Type d’absence",
     mesures: "Modifier une Mesure disciplinaire",
     motifs: "Modifier un Motif de mesure",
     profils: "Modifier un Profil",
-    grilles: "Modifier une Grille",
+    grilles: "Modifier une Grille salariale",
   };
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
-      <DialogTitle>{titles[entity] || `Modifier ${entity}`}</DialogTitle>
+      <DialogTitle>{titles[entity]}</DialogTitle>
       <DialogContent dividers>
         <Stack spacing={2} sx={{ mt: 1 }}>
-          {fields.map((f) => {
-            if (entity === "grilles" && f.key === "profil") {
+          {fieldDefinitions[entity].map((f) => {
+            if (
+              (entity === "motifs" && f.key === "mesureCode") ||
+              (entity === "grilles" && f.key === "profil")
+            ) {
+              const opts = entity === "motifs" ? mesureOptions : profilOptions;
               return (
                 <FormControl fullWidth key={f.key}>
                   <InputLabel id={`${f.key}-label`}>{f.label}</InputLabel>
@@ -195,7 +209,7 @@ export default function EditEntityDialog({
                     label={f.label}
                     onChange={handleChange}
                   >
-                    {profilOptions.map((opt) => (
+                    {opts.map((opt) => (
                       <MenuItem key={opt.value} value={opt.value}>
                         {opt.label}
                       </MenuItem>
@@ -204,7 +218,6 @@ export default function EditEntityDialog({
                 </FormControl>
               );
             }
-
             if (f.type === "select") {
               return (
                 <FormControl fullWidth key={f.key}>
@@ -216,7 +229,7 @@ export default function EditEntityDialog({
                     label={f.label}
                     onChange={handleChange}
                   >
-                    {f.options?.map((opt) => (
+                    {f.options.map((opt) => (
                       <MenuItem key={opt} value={opt}>
                         {opt}
                       </MenuItem>
@@ -225,7 +238,6 @@ export default function EditEntityDialog({
                 </FormControl>
               );
             }
-
             if (f.type === "toggle") {
               return (
                 <FormControlLabel
@@ -241,7 +253,6 @@ export default function EditEntityDialog({
                 />
               );
             }
-
             return (
               <TextField
                 key={f.key}
@@ -251,9 +262,7 @@ export default function EditEntityDialog({
                 name={f.key}
                 multiline={f.type === "text-multiline"}
                 rows={f.type === "text-multiline" ? 3 : undefined}
-                InputLabelProps={
-                  f.type === "date" ? { shrink: true } : undefined
-                }
+                InputLabelProps={f.type === "date" ? { shrink: true } : {}}
                 value={form[f.key] ?? ""}
                 onChange={handleChange}
               />

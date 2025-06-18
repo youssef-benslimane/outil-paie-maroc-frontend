@@ -1,4 +1,3 @@
-// src/pages/ParamCotisationPage.jsx
 import React, { useState, useEffect, useCallback } from "react";
 import { useLocation } from "react-router-dom";
 import {
@@ -40,58 +39,60 @@ import {
   updateOne,
   createOne,
   deleteOne,
-} from "../api/fakeCotisationsApi.js";
+} from "../api/paramCotisationsApi.js";
 
 const drawerWidth = 240;
 
-// Configuration des onglets
 const tabConfig = [
   { key: "typeCot", label: "Type de cotisation" },
   { key: "cotisation", label: "Paramétrage de cotisation" },
 ];
 
-// Titres de colonnes pour chaque onglet
 const columns = {
-  typeCot: ["Nom", "Description", "Date Début", "Date Fin"],
+  typeCot: ["Code", "Nom", "Description", "Date Début", "Date Fin"],
   cotisation: [
-    "Type",
-    "Code",
     "Nom",
+    "Description",
+    "Type",
     "Taux salarial",
     "Taux patronal",
     "Plafond salarial",
     "Plafond patronal",
     "Date Début",
     "Date Fin",
-    "Description",
   ],
 };
 
-// Clés des champs dans l'objet renvoyé par l'API
 const fieldKeys = {
-  typeCot: ["nom", "description", "debut", "fin"],
+  typeCot: [
+    "codeCotisation",
+    "nomCotisation",
+    "description",
+    "dateDebut",
+    "dateFin",
+  ],
   cotisation: [
-    "type",
-    "code",
     "nom",
+    "description",
+    "typeCotisation",
     "tauxSalarial",
     "tauxPatronal",
     "plafondSalarial",
     "plafondPatronal",
-    "debut",
-    "fin",
-    "description",
+    "dateDebut",
+    "dateFin",
   ],
 };
 
-// Étiquettes plus lisibles pour les formulaires
 const labelMap = {
-  nom: "Nom",
+  codeCotisation: "Code",
+  nomCotisation: "Nom",
   description: "Description",
-  debut: "Date de début",
-  fin: "Date de fin",
+  dateDebut: "Date Début",
+  dateFin: "Date Fin",
   type: "Type de cotisation",
   code: "Code de la cotisation",
+  nom: "Nom de la cotisation",
   tauxSalarial: "Taux salarial (%)",
   tauxPatronal: "Taux patronal (%)",
   plafondSalarial: "Plafond salarial",
@@ -105,36 +106,32 @@ function formatDateFR(dateStr) {
 
 export default function ParamCotisationPage() {
   const theme = useTheme();
-  // On considère mobile jusqu'à 899px inclus
   const isMdUp = useMediaQuery(theme.breakpoints.up("md"));
   const location = useLocation();
   const initialTab = location.state?.tab || "typeCot";
 
-  // États principaux
   const [activeTab, setActiveTab] = useState(initialTab);
   const [data, setData] = useState({ typeCot: [], cotisation: [] });
   const [search, setSearch] = useState("");
 
-  // Snackbar pour feedback
-  const [snack, setSnack] = useState({
-    open: false,
-    msg: "",
-    severity: "success",
-  });
-  const showSnack = (msg, severity = "success") =>
-    setSnack({ open: true, msg, severity });
-  const closeSnack = () => setSnack((s) => ({ ...s, open: false }));
+  const [snackOpen, setSnackOpen] = useState(false);
+  const [snackMsg, setSnackMsg] = useState("");
+  const [snackSeverity, setSnackSeverity] = useState("success");
+  const showSnack = (msg, sev = "success") => {
+    setSnackMsg(msg);
+    setSnackSeverity(sev);
+    setSnackOpen(true);
+  };
+  const handleSnackClose = () => setSnackOpen(false);
 
-  // Dialog création
   const [createOpen, setCreateOpen] = useState(false);
   const openCreate = () => setCreateOpen(true);
   const closeCreate = () => setCreateOpen(false);
   const onCreated = useCallback(() => {
     fetchData(activeTab);
-    showSnack("Création réussie");
+    showSnack("Enregistrement créé");
   }, [activeTab]);
 
-  // Dialog édition
   const [editOpen, setEditOpen] = useState(false);
   const [editId, setEditId] = useState(null);
   const openEdit = (id) => {
@@ -147,7 +144,6 @@ export default function ParamCotisationPage() {
     showSnack("Modification enregistrée");
   }, [activeTab]);
 
-  // Dialog suppression
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
   const openDelete = (id) => {
@@ -159,22 +155,9 @@ export default function ParamCotisationPage() {
     await deleteOne(activeTab, deleteId);
     closeDelete();
     fetchData(activeTab);
-    showSnack("Entrée supprimée", "info");
+    showSnack("Enregistrement supprimé", "info");
   };
 
-  // Dialog découpage de période
-  const [splitOpen, setSplitOpen] = useState(false);
-  const [splitForm, setSplitForm] = useState(null);
-  const [splitDate, setSplitDate] = useState("");
-  const [splitError, setSplitError] = useState("");
-
-  // Dialog édition des champs restants
-  const [remainOpen, setRemainOpen] = useState(false);
-  const [remainForm, setRemainForm] = useState({});
-  const [newDebut, setNewDebut] = useState("");
-  const [origFin, setOrigFin] = useState("");
-
-  // Chargement des données
   const fetchData = async (tab) => {
     const list = await getAll(tab);
     setData((d) => ({ ...d, [tab]: list }));
@@ -184,79 +167,20 @@ export default function ParamCotisationPage() {
     window.history.replaceState({}, "");
   }, [activeTab]);
 
-  // Filtrage basique
   const filtered = data[activeTab].filter((row) =>
-    Object.values(row).some((val) =>
-      String(val).toLowerCase().includes(search.toLowerCase())
+    Object.values(row).some((v) =>
+      String(v).toLowerCase().includes(search.toLowerCase())
     )
   );
 
-  // Handlers
   const handleTabChange = (_, v) => {
     setActiveTab(v);
     setSearch("");
-  };
-  const handleSearch = (e) => setSearch(e.target.value);
-
-  // Découpage de période
-  const handleSplitClick = async (id) => {
-    const rec = await getOne(activeTab, id);
-    setSplitForm(rec);
-    setSplitDate(rec.fin);
-    setSplitError("");
-    setSplitOpen(true);
-  };
-  const cancelSplit = () => setSplitOpen(false);
-  const confirmSplit = async () => {
-    if (!splitForm) return;
-    const d0 = new Date(splitForm.debut),
-      d1 = new Date(splitForm.fin),
-      ds = new Date(splitDate);
-    if (ds < d0 || ds >= d1) {
-      setSplitError("Date de séparation hors période !");
-      return;
-    }
-    // Met à jour la fin de la première période
-    await updateOne(activeTab, splitForm.id, { fin: splitDate });
-    // Prépare la seconde période
-    const next = new Date(splitDate);
-    next.setDate(next.getDate() + 1);
-    const yyyy = next.getFullYear(),
-      mm = String(next.getMonth() + 1).padStart(2, "0"),
-      dd = String(next.getDate()).padStart(2, "0");
-    setNewDebut(`${yyyy}-${mm}-${dd}`);
-    setOrigFin(splitForm.fin);
-    // Construit le formulaire sans dates
-    const keys = fieldKeys[activeTab].filter(
-      (k) => k !== "debut" && k !== "fin"
-    );
-    const init = {};
-    keys.forEach((k) => (init[k] = splitForm[k]));
-    setRemainForm(init);
-    setSplitOpen(false);
-    setRemainOpen(true);
-    showSnack("Période découpée");
-  };
-  const handleRemainChange = (e) => {
-    const { name, value } = e.target;
-    setRemainForm((f) => ({ ...f, [name]: value }));
-  };
-  const confirmRemain = async () => {
-    await createOne(activeTab, {
-      ...remainForm,
-      debut: newDebut,
-      fin: origFin,
-    });
-    setRemainOpen(false);
-    fetchData(activeTab);
-    showSnack("Nouvelle période créée");
   };
 
   return (
     <Box sx={{ display: "flex" }}>
       <ConfigurateurSidebar />
-
-      {/* Main content */}
       <Box
         component="main"
         sx={{
@@ -267,11 +191,16 @@ export default function ParamCotisationPage() {
       >
         <Toolbar />
         <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-          <Typography variant="h4" align="center" gutterBottom>
+          <Typography
+            variant="h4"
+            align="center"
+            gutterBottom
+            noWrap
+            sx={{ whiteSpace: "nowrap", textOverflow: "ellipsis" }}
+          >
             Paramétrage des cotisations
           </Typography>
 
-          {/* Onglets + Recherche + Créer */}
           <Box
             sx={{
               display: "flex",
@@ -288,9 +217,9 @@ export default function ParamCotisationPage() {
               variant="scrollable"
               scrollButtons="auto"
               allowScrollButtonsMobile
-              sx={{ flexGrow: 1, justifyContent: "center" }}
               textColor="primary"
               indicatorColor="primary"
+              sx={{ flexGrow: 1, justifyContent: "center" }}
             >
               {tabConfig.map((t) => (
                 <Tab
@@ -300,16 +229,12 @@ export default function ParamCotisationPage() {
                   sx={{
                     fontWeight: 600,
                     textTransform: "none",
-                    fontSize: {
-                      xs: "0.75rem",
-                      sm: "0.75rem", // même style que xs
-                      md: "1rem",
-                    },
+                    fontSize: { xs: "0.75rem", md: "1rem" },
+                    minWidth: 90,
                   }}
                 />
               ))}
             </Tabs>
-
             <Box
               sx={{
                 display: "flex",
@@ -323,7 +248,7 @@ export default function ParamCotisationPage() {
                 size="small"
                 placeholder="Rechercher…"
                 value={search}
-                onChange={handleSearch}
+                onChange={(e) => setSearch(e.target.value)}
                 sx={{ width: isMdUp ? 240 : "100%" }}
               />
               <Button
@@ -336,7 +261,6 @@ export default function ParamCotisationPage() {
             </Box>
           </Box>
 
-          {/* Tableau */}
           <Paper>
             <Box sx={{ overflowX: "auto" }}>
               <Table size="small">
@@ -349,37 +273,45 @@ export default function ParamCotisationPage() {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {filtered.map((row) => (
-                    <TableRow key={row.id}>
-                      {fieldKeys[activeTab].map((f) => (
-                        <TableCell key={f}>
-                          {f === "debut" || f === "fin"
-                            ? formatDateFR(row[f])
-                            : row[f]}
+                  {filtered.map((row) => {
+                    const rowId =
+                      activeTab === "typeCot"
+                        ? row.idTypeCotisation
+                        : row.idCotisation;
+                    return (
+                      <TableRow key={rowId}>
+                        {fieldKeys[activeTab].map((f) => (
+                          <TableCell key={f}>
+                            {["dateDebut", "dateFin", "debut", "fin"].includes(
+                              f
+                            )
+                              ? formatDateFR(row[f])
+                              : row[f]}
+                          </TableCell>
+                        ))}
+                        <TableCell>
+                          <IconButton
+                            size="small"
+                            onClick={() => handleSplitClick(rowId)}
+                          >
+                            <EditCalendarIcon fontSize="small" />
+                          </IconButton>
+                          <IconButton
+                            size="small"
+                            onClick={() => openEdit(rowId)}
+                          >
+                            <EditIcon fontSize="small" />
+                          </IconButton>
+                          <IconButton
+                            size="small"
+                            onClick={() => openDelete(rowId)}
+                          >
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
                         </TableCell>
-                      ))}
-                      <TableCell>
-                        <IconButton
-                          size="small"
-                          onClick={() => handleSplitClick(row.id)}
-                        >
-                          <EditCalendarIcon fontSize="small" />
-                        </IconButton>
-                        <IconButton
-                          size="small"
-                          onClick={() => openEdit(row.id)}
-                        >
-                          <EditIcon fontSize="small" />
-                        </IconButton>
-                        <IconButton
-                          size="small"
-                          onClick={() => openDelete(row.id)}
-                        >
-                          <DeleteIcon fontSize="small" />
-                        </IconButton>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </Box>
@@ -387,17 +319,12 @@ export default function ParamCotisationPage() {
         </Container>
       </Box>
 
-      {/* — Dialogs génériques — */}
-
-      {/* Dialog création */}
       <CreateEntityDialog
         open={createOpen}
         entity={activeTab}
         onClose={closeCreate}
         onCreated={onCreated}
       />
-
-      {/* Dialog édition */}
       <EditEntityDialog
         open={editOpen}
         entity={activeTab}
@@ -406,11 +333,12 @@ export default function ParamCotisationPage() {
         onUpdated={onUpdated}
       />
 
-      {/* Dialog suppression */}
       <Dialog open={deleteOpen} onClose={closeDelete}>
         <DialogTitle>Confirmer la suppression</DialogTitle>
         <DialogContent>
-          <Typography>Voulez-vous supprimer cet élément ?</Typography>
+          <Typography>
+            Êtes-vous sûr de vouloir supprimer cet enregistrement ?
+          </Typography>
         </DialogContent>
         <DialogActions>
           <Button onClick={closeDelete}>Annuler</Button>
@@ -420,79 +348,22 @@ export default function ParamCotisationPage() {
         </DialogActions>
       </Dialog>
 
-      {/* Dialog découpage de période */}
-      <Dialog open={splitOpen} onClose={cancelSplit} fullWidth maxWidth="xs">
-        <DialogTitle>Délimiter la période</DialogTitle>
-        <DialogContent dividers>
-          <Typography gutterBottom>
-            Choisissez la date de fin de la première partie
-          </Typography>
-          <TextField
-            fullWidth
-            type="date"
-            InputLabelProps={{ shrink: true }}
-            value={splitDate}
-            onChange={(e) => setSplitDate(e.target.value)}
-          />
-          {splitError && (
-            <Typography color="error" sx={{ mt: 1 }}>
-              {splitError}
-            </Typography>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={cancelSplit}>Annuler</Button>
-          <Button variant="contained" onClick={confirmSplit}>
-            Suivant
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Dialog pour compléter la seconde période */}
-      <Dialog
-        open={remainOpen}
-        onClose={() => setRemainOpen(false)}
-        fullWidth
-        maxWidth="md"
-      >
-        <DialogTitle>Modifier les champs restants</DialogTitle>
-        <DialogContent dividers>
-          <Stack spacing={2} sx={{ mt: 1 }}>
-            {Object.keys(remainForm).map((key) => (
-              <TextField
-                key={key}
-                fullWidth
-                label={labelMap[key] || key}
-                name={key}
-                value={remainForm[key]}
-                onChange={handleRemainChange}
-              />
-            ))}
-          </Stack>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setRemainOpen(false)}>Annuler</Button>
-          <Button variant="contained" onClick={confirmRemain}>
-            Enregistrer
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Snackbar de feedback */}
       <Snackbar
-        open={snack.open}
+        open={snackOpen}
         autoHideDuration={3000}
-        onClose={closeSnack}
+        onClose={handleSnackClose}
         anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
       >
         <Alert
-          onClose={closeSnack}
-          severity={snack.severity}
+          onClose={handleSnackClose}
+          severity={snackSeverity}
           sx={{ width: "100%" }}
         >
-          {snack.msg}
+          {snackMsg}
         </Alert>
       </Snackbar>
     </Box>
   );
 }
+
+// N’oublie pas de déclarer handleSplitClick si tu utilises la fonctionnalité de découpage de période !

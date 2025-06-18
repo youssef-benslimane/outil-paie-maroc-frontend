@@ -88,13 +88,13 @@ const columns = {
     "Date Fin",
   ],
   unite: [
-    "Code unité", // 1
-    "Nom unité", // 2
-    "Type unité", // 3
-    "Unité parent", // 4
-    "Description", // 5
-    "Date Début", // 6
-    "Date Fin", // 7
+    "Code unité",
+    "Nom unité",
+    "Type unité",
+    "Unité parent",
+    "Description",
+    "Date Début",
+    "Date Fin",
   ],
 };
 
@@ -134,18 +134,17 @@ const fieldKeys = {
     "dateFin",
   ],
   unite: [
-    "codeUnite", // 1 → Code unité
-    "nomUnite", // 2 → Nom unité
-    "typeUnite", // 3 → Type unité
-    "uniteParent", // 4 → Unité parent
-    "descriptionUnite", // 5 → Description
-    "dateDebut", // 6 → Date Début
-    "dateFin", // 7 → Date Fin
+    "codeUnite",
+    "nomUnite",
+    "typeUnite",
+    "uniteParent",
+    "descriptionUnite",
+    "dateDebut",
+    "dateFin",
   ],
 };
 
 const labelMap = {
-  idSociete: "ID Société",
   nomSociete: "Nom Société",
   adresse: "Adresse",
   ville: "Ville",
@@ -155,13 +154,6 @@ const labelMap = {
   numeroRc: "Numéro RC",
   dateDebut: "Date Début",
   dateFin: "Date Fin",
-  code: "Code",
-  essai: "Période d’essai",
-  conditions: "Conditions spécifiques",
-  description: "Description",
-  type: "Type d’unité",
-  parent: "Rattachement hiérarchique",
-  statut: "Statut de l’unité",
   codeContrat: "Code du contrat",
   nomContrat: "Nom du contrat",
   periodeEssai: "Période d’essai",
@@ -200,6 +192,7 @@ export default function ParamAdminPage() {
   const location = useLocation();
   const initialTab = location.state?.tab || "societe";
 
+  // --- onglets, recherche, données ---
   const [activeTab, setActiveTab] = useState(initialTab);
   const [search, setSearch] = useState("");
   const [data, setData] = useState({
@@ -210,6 +203,7 @@ export default function ParamAdminPage() {
     unite: [],
   });
 
+  // --- notifications ---
   const [snackOpen, setSnackOpen] = useState(false);
   const [snackMsg, setSnackMsg] = useState("");
   const [snackSeverity, setSnackSeverity] = useState("success");
@@ -220,6 +214,7 @@ export default function ParamAdminPage() {
   };
   const handleSnackClose = () => setSnackOpen(false);
 
+  // --- création ---
   const [createOpen, setCreateOpen] = useState(false);
   const openCreate = () => setCreateOpen(true);
   const closeCreate = () => setCreateOpen(false);
@@ -228,6 +223,7 @@ export default function ParamAdminPage() {
     showSnack("Enregistrement créé");
   }, [activeTab]);
 
+  // --- édition ---
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editDialogId, setEditDialogId] = useState(null);
   const openEditDialog = (id) => {
@@ -243,6 +239,7 @@ export default function ParamAdminPage() {
     showSnack("Modification enregistrée");
   }, [activeTab]);
 
+  // --- suppression ---
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
   const openDeleteDialog = (id) => {
@@ -254,93 +251,125 @@ export default function ParamAdminPage() {
     setDeleteId(null);
   };
   const handleDeleteConfirm = async () => {
-    await deleteOne(activeTab, deleteId);
+    await deleteOne(entityApiMap[activeTab], deleteId);
     closeDeleteDialog();
     fetchData(activeTab);
     showSnack("Enregistrement supprimé", "info");
   };
 
+  // --- découpage de période ---
   const [splitOpen, setSplitOpen] = useState(false);
-  const [splitForm, setSplitForm] = useState(null);
+  const [splitRow, setSplitRow] = useState(null);
   const [splitDate, setSplitDate] = useState("");
-  const [errorOpen, setErrorOpen] = useState(false);
-  const [errorMsg, setErrorMsg] = useState("");
   const [remainOpen, setRemainOpen] = useState(false);
   const [remainForm, setRemainForm] = useState({});
   const [newDebut, setNewDebut] = useState("");
   const [origFin, setOrigFin] = useState("");
 
-  const handleSplitClick = async (id) => {
-    const rec = await getOne(activeTab, id);
-    setSplitForm(rec);
-    setSplitDate(rec.dateFin || rec.fin);
+  const [errorOpen, setErrorOpen] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
+
+  const handleRemainChange = (e) => {
+    const { name, value } = e.target;
+    setRemainForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleRemainConfirm = async () => {
+    // on recrée le record avec les champs modifiés + dates déjà calculées
+    const payload = {
+      ...remainForm,
+      dateDebut: newDebut,
+      dateFin: origFin,
+    };
+    // si besoin, générez un nouvel ID ; sinon laissez le back le faire
+    payload.idSociete = `SI${Math.floor(10000 + Math.random() * 90000)}`;
+    await createOne(entityApiMap[activeTab], payload);
+    fetchData(activeTab);
+    setRemainOpen(false);
+    showSnack("Entrée délimitée avec succès");
+  };
+
+  const handleSplitClick = (row) => {
+    setSplitRow(row);
+    setSplitDate(row.dateFin || "");
     setSplitOpen(true);
   };
   const handleSplitCancel = () => {
     setSplitOpen(false);
-    setSplitForm(null);
+    setSplitRow(null);
     setSplitDate("");
   };
+
+  // clé à utiliser pour l’ID selon l’entité active
+  const idKeyMap = {
+    societe: "idSociete",
+    contrat: "codeContrat", // contract.id
+    categorie: "idCategorie",
+    statut: "idStatut",
+    unite: "idUnite",
+  };
   const handleSplitConfirm = async () => {
-    if (!splitForm) return;
-    const d0 = new Date(splitForm.dateDebut || splitForm.debut);
-    const d1 = new Date(splitForm.dateFin || splitForm.fin);
-    const ds = new Date(splitDate);
-    if (ds < d0 || ds >= d1) {
-      setErrorMsg("Date de séparation hors période !");
+    if (!splitDate) {
+      setErrorMsg("Veuillez choisir une date de séparation.");
       setErrorOpen(true);
       return;
     }
-    await updateOne(activeTab, splitForm.idSociete ?? splitForm.id, {
+    if (splitDate < splitRow.dateDebut || splitDate > splitRow.dateFin) {
+      setErrorMsg("La date doit être comprise entre début et fin actuels.");
+      setErrorOpen(true);
+      return;
+    }
+
+    const idKey = idKeyMap[activeTab];
+    const idValue = splitRow[idKey];
+    const apiEnt = entityApiMap[activeTab];
+
+    // 1) mise à jour de l’existant
+    await updateOne(apiEnt, idValue, {
+      ...splitRow,
       dateFin: splitDate,
-      fin: splitDate,
     });
-    const next = new Date(splitDate);
-    next.setDate(next.getDate() + 1);
-    const yyyy = next.getFullYear();
-    const mm = String(next.getMonth() + 1).padStart(2, "0");
-    const dd = String(next.getDate()).padStart(2, "0");
-    setNewDebut(`${yyyy}-${mm}-${dd}`);
-    setOrigFin(splitForm.dateFin || splitForm.fin);
-    const keys = fieldKeys[activeTab].filter(
-      (k) =>
-        k !== "dateDebut" && k !== "dateFin" && k !== "debut" && k !== "fin"
-    );
+
+    // 2) calcul des dates pour le nouveau record
+    const nextDay = new Date(splitDate);
+    nextDay.setDate(nextDay.getDate() + 1);
+    const _newDebut = nextDay.toISOString().slice(0, 10);
+
+    // 3) préparation du form et suppression de l’ID existant
     const init = {};
-    keys.forEach((k) => (init[k] = splitForm[k]));
+    fieldKeys[activeTab].forEach((k) => {
+      if (k !== "dateDebut" && k !== "dateFin") init[k] = splitRow[k];
+    });
     setRemainForm(init);
+    setNewDebut(_newDebut);
+    setOrigFin(splitRow.dateFin);
+
+    // on retire la clé d’ID pour laisser l’API en générer une nouvelle
+    const newRec = {
+      ...splitRow,
+      dateDebut: _newDebut,
+      dateFin: splitRow.dateFin,
+    };
+    delete newRec[idKey];
+
+    // 4) on ferme le split-dialog et on ouvre le remain-dialog
     setSplitOpen(false);
     setRemainOpen(true);
-    showSnack("Période découpée");
-  };
-  const handleRemainChange = (e) => {
-    const { name, value } = e.target;
-    setRemainForm((f) => ({ ...f, [name]: value }));
-  };
-  const handleRemainConfirm = async () => {
-    await createOne(activeTab, {
-      ...remainForm,
-      dateDebut: newDebut,
-      dateFin: origFin,
-      debut: newDebut,
-      fin: origFin,
-    });
-    setRemainOpen(false);
-    fetchData(activeTab);
-    showSnack("Nouvelle période enregistrée");
   };
 
+  // --- chargement des données ---
   const fetchData = async (tab) => {
     const apiEntity = entityApiMap[tab] || tab;
     const list = await getAll(apiEntity);
-
     setData((d) => ({ ...d, [tab]: list }));
   };
+
   useEffect(() => {
     fetchData(activeTab);
     window.history.replaceState({}, "");
   }, [activeTab]);
 
+  // --- filtre de recherche ---
   const filtered = data[activeTab].filter((row) =>
     Object.values(row).some((v) =>
       String(v).toLowerCase().includes(search.toLowerCase())
@@ -373,6 +402,7 @@ export default function ParamAdminPage() {
           >
             Paramétrage des données administratives
           </Typography>
+
           <Box
             sx={{
               display: "flex",
@@ -435,6 +465,7 @@ export default function ParamAdminPage() {
               </Button>
             </Box>
           </Box>
+
           <Paper>
             <Box sx={{ overflowX: "auto" }}>
               <Table size="small">
@@ -448,13 +479,12 @@ export default function ParamAdminPage() {
                 </TableHead>
                 <TableBody>
                   {filtered.map((row) => {
-                    // choisir une clé unique suivant l’entité
                     const rowId =
                       row.id ??
                       row.idSociete ??
                       row.idCategorie ??
                       row.idStatut ??
-                      row.idUnite ?? // ← ici
+                      row.idUnite ??
                       row.codeContrat ??
                       row.codeCategorie ??
                       row.codeStatut ??
@@ -471,9 +501,9 @@ export default function ParamAdminPage() {
                         <TableCell>
                           <IconButton
                             size="small"
-                            onClick={() => handleSplitClick(rowId)}
+                            onClick={() => handleSplitClick(row)}
                           >
-                            <EditCalendarIcon fontSize="small" />
+                            <EditCalendarIcon fontSize="inherit" />
                           </IconButton>
                           <IconButton
                             size="small"
@@ -497,6 +527,7 @@ export default function ParamAdminPage() {
           </Paper>
         </Container>
       </Box>
+
       <CreateEntityDialog
         open={createOpen}
         entity={activeTab}
@@ -510,6 +541,52 @@ export default function ParamAdminPage() {
         onClose={closeEditDialog}
         onUpdated={onUpdated}
       />
+
+      {/* Dialog découpage */}
+      <Dialog
+        open={splitOpen}
+        onClose={handleSplitCancel}
+        fullWidth
+        maxWidth="xs"
+      >
+        <DialogTitle>Délimiter la période</DialogTitle>
+        <DialogContent dividers>
+          <Typography gutterBottom>
+            Choisissez la date de fin de la première partie
+          </Typography>
+          <TextField
+            fullWidth
+            label="Date de séparation"
+            type="date"
+            InputLabelProps={{ shrink: true }}
+            inputProps={{
+              min: splitRow?.dateDebut,
+              max: splitRow?.dateFin,
+            }}
+            value={splitDate}
+            onChange={(e) => setSplitDate(e.target.value)}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleSplitCancel}>Annuler</Button>
+          <Button variant="contained" onClick={handleSplitConfirm}>
+            Valider
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Erreur découpage */}
+      <Dialog open={errorOpen} onClose={() => setErrorOpen(false)}>
+        <DialogTitle>Erreur</DialogTitle>
+        <DialogContent>
+          <Typography>{errorMsg}</Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setErrorOpen(false)}>OK</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Dialog suppression */}
       <Dialog open={deleteOpen} onClose={closeDeleteDialog}>
         <DialogTitle>Confirmer la suppression</DialogTitle>
         <DialogContent>
@@ -528,49 +605,30 @@ export default function ParamAdminPage() {
           </Button>
         </DialogActions>
       </Dialog>
-      <Dialog
-        open={splitOpen}
-        onClose={handleSplitCancel}
-        fullWidth
-        maxWidth="xs"
+
+      {/* Notification */}
+      <Snackbar
+        open={snackOpen}
+        autoHideDuration={3000}
+        onClose={handleSnackClose}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
       >
-        <DialogTitle>Délimiter la période</DialogTitle>
-        <DialogContent dividers>
-          <Typography gutterBottom>
-            Choisissez la date de fin de la première partie
-          </Typography>
-          <TextField
-            fullWidth
-            label="Date de séparation"
-            type="date"
-            InputLabelProps={{ shrink: true }}
-            value={splitDate}
-            onChange={(e) => setSplitDate(e.target.value)}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleSplitCancel}>Annuler</Button>
-          <Button variant="contained" onClick={handleSplitConfirm}>
-            Suivant
-          </Button>
-        </DialogActions>
-      </Dialog>
-      <Dialog open={errorOpen} onClose={() => setErrorOpen(false)}>
-        <DialogTitle>Erreur</DialogTitle>
-        <DialogContent>
-          <Typography>{errorMsg}</Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setErrorOpen(false)}>OK</Button>
-        </DialogActions>
-      </Dialog>
+        <Alert
+          onClose={handleSnackClose}
+          severity={snackSeverity}
+          sx={{ width: "100%" }}
+        >
+          {snackMsg}
+        </Alert>
+      </Snackbar>
+      {/* Dialog pour modifier les autres champs après découpage */}
       <Dialog
         open={remainOpen}
         onClose={() => setRemainOpen(false)}
         fullWidth
         maxWidth="md"
       >
-        <DialogTitle>Modifier les informations restantes</DialogTitle>
+        <DialogTitle>Modifier les autres champs</DialogTitle>
         <DialogContent dividers>
           <Stack spacing={2} sx={{ mt: 1 }}>
             {Object.keys(remainForm).map((key) => (
@@ -592,20 +650,6 @@ export default function ParamAdminPage() {
           </Button>
         </DialogActions>
       </Dialog>
-      <Snackbar
-        open={snackOpen}
-        autoHideDuration={3000}
-        onClose={handleSnackClose}
-        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
-      >
-        <Alert
-          onClose={handleSnackClose}
-          severity={snackSeverity}
-          sx={{ width: "100%" }}
-        >
-          {snackMsg}
-        </Alert>
-      </Snackbar>
     </Box>
   );
 }

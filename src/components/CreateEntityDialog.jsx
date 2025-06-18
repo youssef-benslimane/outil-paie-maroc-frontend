@@ -1,4 +1,3 @@
-// src/components/CreateEntityDialog.jsx
 import React, { useState, useEffect } from "react";
 import {
   Dialog,
@@ -16,7 +15,7 @@ import {
   Button,
 } from "@mui/material";
 import { createOne as createParam } from "../api/paramAdminApi.js";
-import { createOne as createCot } from "../api/fakeCotisationsApi.js";
+import { createOne as createCot } from "../api/paramCotisationsApi.js";
 import { createOne as createAbs } from "../api/fakeAbsenceApi.js";
 import { createOne as createPrime } from "../api/fakePrimeApi.js";
 import { createOne as createBareme } from "../api/fakeBaremeApi.js";
@@ -99,38 +98,42 @@ export const fieldDefinitions = {
       key: "uniteParent",
       label: "Unité parent",
       type: "select",
-      options: ["None" /*ou liste dynamique*/],
+      options: ["None"],
     },
     { key: "descriptionUnite", label: "Description", type: "text-multiline" },
     { key: "dateDebut", label: "Date début", type: "date" },
     { key: "dateFin", label: "Date fin", type: "date" },
   ],
   typeCot: [
-    { key: "nom", label: "Nom du type de cotisation", type: "text" },
+    {
+      key: "codeCotisation",
+      label: "code du type de cotisation",
+      type: "text",
+    },
+    { key: "nomCotisation", label: "Nom du type de cotisation", type: "text" },
     { key: "description", label: "Description", type: "text-multiline" },
-    { key: "debut", label: "Date d’entrée en vigueur", type: "date" },
-    { key: "fin", label: "Date de fin de validité", type: "date" },
+    { key: "dateDebut", label: "Date d’entrée en vigueur", type: "date" },
+    { key: "dateFin", label: "Date de fin de validité", type: "date" },
   ],
   cotisation: [
-    {
-      key: "type",
-      label: "Type de cotisation",
-      type: "select",
-      options: ["CNSS", "CIMR", "AMO"],
-    },
-    { key: "code", label: "Code de la cotisation", type: "text" },
     { key: "nom", label: "Nom de la cotisation", type: "text" },
-    { key: "tauxSalarial", label: "Taux salarial (%)", type: "number" },
-    { key: "tauxPatronal", label: "Taux patronal (%)", type: "number" },
-    { key: "plafondSalarial", label: "Plafond salarial", type: "number" },
-    { key: "plafondPatronal", label: "Plafond patronal", type: "number" },
-    { key: "debut", label: "Date début", type: "date" },
-    { key: "fin", label: "Date fin", type: "date" },
     {
       key: "description",
       label: "Informations complémentaires",
       type: "text-multiline",
     },
+    {
+      key: "typeCotisation",
+      label: "Type de cotisation",
+      type: "select",
+      options: ["CNSS", "CIMR", "AMO"],
+    },
+    { key: "tauxSalarial", label: "Taux salarial (%)", type: "number" },
+    { key: "tauxPatronal", label: "Taux patronal (%)", type: "number" },
+    { key: "plafondSalarial", label: "Plafond salarial", type: "number" },
+    { key: "plafondPatronal", label: "Plafond patronal", type: "number" },
+    { key: "dateDebut", label: "Date début", type: "date" },
+    { key: "dateFin", label: "Date fin", type: "date" },
   ],
   typeAbsence: [
     { key: "nom", label: "Nom du type d’absence", type: "text" },
@@ -206,7 +209,7 @@ export const fieldDefinitions = {
       key: "mesureCode",
       label: "Mesure associée",
       type: "select",
-      options: [], // sera rempli dynamiquement
+      options: [],
     },
     { key: "debut", label: "Date début", type: "date" },
     { key: "fin", label: "Date fin", type: "date" },
@@ -239,7 +242,7 @@ export const fieldDefinitions = {
       key: "profil",
       label: "Profil concerné",
       type: "select",
-      options: [], // sera rempli dynamiquement
+      options: [],
     },
     { key: "niveau", label: "Niveau", type: "text" },
     { key: "echelon", label: "Échelon", type: "text" },
@@ -263,7 +266,6 @@ export default function CreateEntityDialog({
   useEffect(() => {
     if (!open) return;
     setForm({});
-
     if (entity === "motifs") {
       (async () => {
         const allMesures = await getAllMesures("mesures");
@@ -275,7 +277,6 @@ export default function CreateEntityDialog({
         );
       })();
     }
-
     if (entity === "grilles") {
       (async () => {
         const allProfils = await getAllProfils("profils");
@@ -298,6 +299,7 @@ export default function CreateEntityDialog({
     let createFn;
     switch (entity) {
       case "typeCot":
+
       case "cotisation":
         createFn = createCot;
         break;
@@ -328,33 +330,10 @@ export default function CreateEntityDialog({
       default:
         createFn = createParam;
     }
-    // préparer le payload
     const payload = { ...form };
-    if (entity === "societe") {
-      // générer un ID aléatoire
-      const randomNum = Math.floor(10000 + Math.random() * 90000);
-      payload.idSociete = `SI${randomNum}`;
-      // nomBanque, rib, bic seront pris depuis le formulaire
-    }
-    if (entity === "categorie") {
-      // générer un ID unique
-      const random = Math.floor(10000 + Math.random() * 90000);
-      payload.idCategorie = `CAT${random}`;
-      payload.echelons = [];
-      payload.profilsSalariaux = [];
-    }
-    if (entity === "statut") {
-      const rnd = Math.floor(10000 + Math.random() * 90000);
-      payload.idStatut = `ST${rnd}`;
-      payload.categoriesSalariales = [];
-      payload.echelons = [];
-      payload.profilsSalariaux = [];
-    }
-    if (entity === "unite") {
-      payload.idUnite = id;
-      payload.sousUnites = payload.sousUnites ?? [];
-      payload.employes = payload.employes ?? [];
-      payload.societe = payload.societe ?? null;
+    if (entity === "typeCot") {
+      payload.idTypeCotisation = `TC${Math.floor(1000 + Math.random() * 9000)}`;
+      delete payload.cotisations; // ne jamais envoyer la relation
     }
     await createFn(entity, payload);
     onCreated();
@@ -407,7 +386,6 @@ export default function CreateEntityDialog({
                 </FormControl>
               );
             }
-
             if (entity === "grilles" && f.key === "profil") {
               return (
                 <FormControl fullWidth key={f.key}>
@@ -428,7 +406,6 @@ export default function CreateEntityDialog({
                 </FormControl>
               );
             }
-
             if (f.type === "select") {
               return (
                 <FormControl fullWidth key={f.key}>
@@ -449,7 +426,6 @@ export default function CreateEntityDialog({
                 </FormControl>
               );
             }
-
             if (f.type === "toggle") {
               return (
                 <FormControlLabel
@@ -465,7 +441,6 @@ export default function CreateEntityDialog({
                 />
               );
             }
-
             return (
               <TextField
                 key={f.key}
