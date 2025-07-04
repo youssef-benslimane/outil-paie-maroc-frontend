@@ -16,7 +16,7 @@ import {
 } from "@mui/material";
 import { createOne as createParam } from "../api/paramAdminApi.js";
 import { createOne as createCot } from "../api/paramCotisationsApi.js";
-import { createOne as createAbs } from "../api/fakeAbsenceApi.js";
+import { createTypeAbsence } from "../api/paramAbsenceApi.js";
 import { createOne as createPrime } from "../api/fakePrimeApi.js";
 import { createOne as createBareme } from "../api/fakeBaremeApi.js";
 import { createOne as createTemps } from "../api/fakeTempsApi.js";
@@ -29,6 +29,9 @@ import {
   getAll as getAllProfils,
   createOne as createGrille,
 } from "../api/fakeProfilGrilleApi.js";
+
+import { createOne as createTypePrime } from "../api/paramPrimeIndemniteApi.js";
+import { createBaremeIR } from "../api/paramBaremeIRApi.js";
 
 export const fieldDefinitions = {
   societe: [
@@ -136,13 +139,41 @@ export const fieldDefinitions = {
     { key: "dateFin", label: "Date fin", type: "date" },
   ],
   typeAbsence: [
-    { key: "nom", label: "Nom du type d’absence", type: "text" },
-    { key: "code", label: "Code de l’absence", type: "text" },
-    { key: "justificatif", label: "Justificatif requis", type: "toggle" },
-    { key: "remunere", label: "Absence rémunérée", type: "toggle" },
-    { key: "impactSolde", label: "Impact solde de congé", type: "toggle" },
-    { key: "debut", label: "Date de début", type: "date" },
-    { key: "fin", label: "Date de fin", type: "date" },
+    { key: "codeAbsence", label: "Code de l’absence", type: "text" },
+    { key: "nomAbsence", label: "Nom du type d’absence", type: "text" },
+    { key: "justificatifRequis", label: "Justificatif requis", type: "toggle" },
+    { key: "absenceRemuneree", label: "Absence rémunérée", type: "toggle" },
+    { key: "impactSoldeConge", label: "Impact solde de congé", type: "toggle" },
+    { key: "dateDebut", label: "Date de début", type: "date" },
+    { key: "dateFin", label: "Date de fin", type: "date" },
+  ],
+  typePrime: [
+    {
+      key: "codeTypePrime",
+      label: "code",
+      type: "text",
+    },
+    {
+      key: "type",
+      label: "Type",
+      type: "select",
+      options: ["Prime", "Indemnité"],
+    },
+    {
+      key: "unite",
+      label: "Unité",
+      type: "select",
+      options: ["Montant fixe", "Pourcentage", "Nombre"],
+    },
+    { key: "nombre", label: "Nombre", type: "number" },
+    { key: "montantFixe", label: "Montant fixe", type: "number" },
+    { key: "tauxPourcentage", label: "Taux (%)", type: "number" },
+    { key: "soumisCNSS", label: "Soumis CNSS", type: "toggle" },
+    { key: "soumisAMO", label: "Soumis AMO", type: "toggle" },
+    { key: "soumisCIMR", label: "Soumis CIMR", type: "toggle" },
+    { key: "soumisIR", label: "Soumis IR", type: "toggle" },
+    { key: "dateDebut", label: "Date début", type: "date" },
+    { key: "dateFin", label: "Date fin", type: "date" },
   ],
   prime: [
     { key: "nom", label: "Nom de la prime/indemnité", type: "text" },
@@ -168,19 +199,19 @@ export const fieldDefinitions = {
     { key: "fin", label: "Date de fin", type: "date" },
   ],
   tranches: [
-    { key: "minimum", label: "Minimum", type: "number" },
-    { key: "maximum", label: "Maximum", type: "number" },
-    { key: "taux", label: "Taux IR (%)", type: "number" },
-    { key: "deduction", label: "Montant déduction", type: "number" },
-    { key: "debut", label: "Date de début", type: "date" },
-    { key: "fin", label: "Date de fin", type: "date" },
+    { key: "minimum", label: "Seuil minimal", type: "number" },
+    { key: "maximum", label: "Seuil maximal", type: "number" },
+    { key: "tauxIr", label: "Taux IR (%)", type: "number" },
+    { key: "montantDeduction", label: "Déduction forfaitaire", type: "number" },
+    { key: "dateDebut", label: "Date début", type: "date" },
+    { key: "dateFin", label: "Date fin", type: "date" },
   ],
   plafonds: [
     { key: "code", label: "Code constante", type: "text" },
     { key: "nom", label: "Nom constante", type: "text" },
     { key: "valeur", label: "Valeur", type: "number" },
-    { key: "debut", label: "Date de début", type: "date" },
-    { key: "fin", label: "Date de fin", type: "date" },
+    { key: "dateDebut", label: "Date début", type: "date" },
+    { key: "dateFin", label: "Date fin", type: "date" },
   ],
   holidays: [
     { key: "nom", label: "Nom du jour férié", type: "text" },
@@ -296,22 +327,64 @@ export default function CreateEntityDialog({
   };
 
   const handleSubmit = async () => {
+    if (entity === "tranches") {
+      const generatedId = `T${Math.floor(1000 + Math.random() * 9000)}`;
+      const payload = {
+        idTranche: generatedId,
+        minimum: form.minimum ?? null,
+        maximum: form.maximum ?? null,
+        tauxIr: form.tauxIr ?? null,
+        montantDeduction: form.montantDeduction ?? null,
+        dateDebut: form.dateDebut,
+        dateFin: form.dateFin,
+      };
+      await createBaremeIR(payload);
+      onCreated();
+      onClose();
+      return;
+    }
+
+    if (entity === "plafonds") {
+      const payload = {
+        code: form.code,
+        nom: form.nom,
+        valeur: form.valeur,
+        dateDebut: form.dateDebut,
+        dateFin: form.dateFin,
+      };
+      await createBaremeIR([payload]);
+      onCreated();
+      onClose();
+      return;
+    }
+
+    if (entity === "typeAbsence") {
+      await createTypeAbsence({
+        idTypeAbsence: form.codeAbsence,
+        nomAbsence: form.nomAbsence,
+        codeAbsence: form.codeAbsence,
+        justificatifRequis: form.justificatifRequis,
+        absenceRemuneree: form.absenceRemuneree,
+        impactSoldeConge: form.impactSoldeConge,
+        dateDebut: form.dateDebut,
+        dateFin: form.dateFin,
+      });
+      onCreated();
+      onClose();
+      return;
+    }
+
     let createFn;
     switch (entity) {
+      case "typePrime":
+        createFn = createTypePrime;
+        break;
       case "typeCot":
-
       case "cotisation":
         createFn = createCot;
         break;
-      case "typeAbsence":
-        createFn = createAbs;
-        break;
       case "prime":
         createFn = createPrime;
-        break;
-      case "tranches":
-      case "plafonds":
-        createFn = createBareme;
         break;
       case "holidays":
       case "absenceTypes":
@@ -330,11 +403,13 @@ export default function CreateEntityDialog({
       default:
         createFn = createParam;
     }
+
     const payload = { ...form };
-    if (entity === "typeCot") {
+    if (entity === "typeCot")
       payload.idTypeCotisation = `TC${Math.floor(1000 + Math.random() * 9000)}`;
-      delete payload.cotisations; // ne jamais envoyer la relation
-    }
+    if (entity === "typePrime")
+      payload.idTypePrime = `TPR${Math.floor(1000 + Math.random() * 9000)}`;
+
     await createFn(entity, payload);
     onCreated();
     onClose();
@@ -352,6 +427,7 @@ export default function CreateEntityDialog({
     typeAbsence: "Créer un Type d’absence",
     prime: "Créer une Prime / Indemnité",
     tranches: "Créer une Tranche IR",
+    plafonds: "Créer une Constante / Plafond",
     holidays: "Créer un Jour férié",
     absenceTypes: "Créer un Type d’absence",
     mesures: "Créer une Mesure disciplinaire",

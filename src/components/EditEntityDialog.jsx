@@ -32,9 +32,9 @@ import {
   updateOne as updatePrime,
 } from "../api/fakePrimeApi.js";
 import {
-  getOne as getBareme,
-  updateOne as updateBareme,
-} from "../api/fakeBaremeApi.js";
+  getBaremeIRById as getBaremeIR,
+  updateBaremeIR as updateBaremeIR,
+} from "../api/paramBaremeIRApi.js";
 import {
   getOne as getTemps,
   updateOne as updateTemps,
@@ -50,6 +50,11 @@ import {
   getOne as getGrille,
   updateOne as updateGrille,
 } from "../api/fakeProfilGrilleApi.js";
+
+import {
+  getOne as getTypePrime,
+  updateOne as updateTypePrime,
+} from "../api/paramPrimeIndemniteApi.js";
 import { fieldDefinitions } from "./CreateEntityDialog.jsx";
 
 export default function EditEntityDialog({
@@ -81,6 +86,9 @@ export default function EditEntityDialog({
     }
     let fetchFn;
     switch (entity) {
+      case "typePrime":
+        fetchFn = getTypePrime;
+        break;
       case "typeCot":
       case "cotisation":
         fetchFn = getCot;
@@ -93,7 +101,7 @@ export default function EditEntityDialog({
         break;
       case "tranches":
       case "plafonds":
-        fetchFn = getBareme;
+        fetchFn = getBaremeIR;
         break;
       case "holidays":
       case "absenceTypes":
@@ -112,7 +120,7 @@ export default function EditEntityDialog({
       default:
         fetchFn = getParam;
     }
-    fetchFn(entity, id).then((data) => setForm({ ...data }));
+    fetchFn(id).then((data) => setForm({ ...data }));
   }, [open, entity, id]);
 
   const handleChange = (e) => {
@@ -123,6 +131,9 @@ export default function EditEntityDialog({
   const handleSubmit = async () => {
     let updateFn;
     switch (entity) {
+      case "typePrime":
+        updateFn = updateTypePrime;
+        break;
       case "typeCot":
       case "cotisation":
         updateFn = updateCot;
@@ -135,7 +146,7 @@ export default function EditEntityDialog({
         break;
       case "tranches":
       case "plafonds":
-        updateFn = updateBareme;
+        updateFn = updateBaremeIR;
         break;
       case "holidays":
       case "absenceTypes":
@@ -160,9 +171,9 @@ export default function EditEntityDialog({
       delete payload.cotisations;
       delete payload.idTypeCotisation;
     }
+    const targetId = id ?? form.idTypePrime ?? form.idTypeCotisation;
 
-    const targetId = id ?? form.idTypeCotisation;
-    await updateFn(entity, targetId, payload);
+    await updateFn(targetId, payload);
 
     onUpdated();
     onClose();
@@ -177,6 +188,7 @@ export default function EditEntityDialog({
     typeCot: "Modifier un Type de cotisation",
     cotisation: "Modifier une Cotisation",
     typeAbsence: "Modifier un Type d’absence",
+    typePrime: "Modifier un Type de Prime / Indemnité",
     prime: "Modifier une Prime / Indemnité",
     tranches: "Modifier une Tranche IR",
     plafonds: "Modifier une Constante / Plafond IR",

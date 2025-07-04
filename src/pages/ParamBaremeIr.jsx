@@ -21,7 +21,6 @@ import {
   DialogContent,
   DialogActions,
   TextField,
-  Stack,
   Snackbar,
   Alert,
   useTheme,
@@ -31,17 +30,16 @@ import AddIcon from "@mui/icons-material/Add";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditCalendarIcon from "@mui/icons-material/EditCalendar";
-import SwapHorizIcon from "@mui/icons-material/SwapHoriz";
 import ConfigurateurSidebar from "../components/ConfigurateurSidebar.jsx";
 import CreateEntityDialog from "../components/CreateEntityDialog.jsx";
 import EditEntityDialog from "../components/EditEntityDialog.jsx";
 import {
-  getAll,
-  getOne,
-  createOne,
-  updateOne,
-  deleteOne,
-} from "../api/fakeBaremeApi.js";
+  getAllBaremesIR as getAll,
+  getBaremeIRById as getOne,
+  createBaremeIR as createOne,
+  updateBaremeIR as updateOne,
+  deleteBaremeIR as deleteOne,
+} from "../api/paramBaremeIRApi.js";
 
 // formater JJ/MM/AAAA
 function formatDateFR(d) {
@@ -69,8 +67,15 @@ const columns = {
 
 // clés des champs renvoyés par l'API
 const fieldKeys = {
-  tranches: ["minimum", "maximum", "taux", "deduction", "debut", "fin"],
-  plafonds: ["code", "nom", "valeur", "debut", "fin"],
+  tranches: [
+    "minimum",
+    "maximum",
+    "tauxIr",
+    "montantDeduction",
+    "dateDebut",
+    "dateFin",
+  ],
+  plafonds: ["code", "nom", "valeur", "dateDebut", "dateFin"],
 };
 
 export default function ParamBaremeIR() {
@@ -100,10 +105,13 @@ export default function ParamBaremeIR() {
   const [splitDate, setSplitDate] = useState("");
   const [splitForm, setSplitForm] = useState(null);
 
+  // Chargement des données
   const fetchData = useCallback(async () => {
-    const tr = await getAll("tranches");
-    const pl = await getAll("plafonds");
-    setData({ tranches: tr, plafonds: pl });
+    const [tranches, plafonds] = await Promise.all([
+      getAll("tranches"),
+      getAll("plafonds"),
+    ]);
+    setData({ tranches, plafonds });
   }, []);
 
   useEffect(() => {
@@ -111,14 +119,14 @@ export default function ParamBaremeIR() {
     window.history.replaceState({}, "");
   }, [fetchData]);
 
-  // filtrage
+  // filtrage par recherche
   const filtered = data[activeTab].filter((row) =>
     Object.values(row).some((v) =>
       String(v).toLowerCase().includes(search.toLowerCase())
     )
   );
 
-  // handlers création / maj / suppression
+  // callbacks création / maj
   const onCreated = useCallback(() => {
     fetchData();
     showSnack("Création réussie");
@@ -129,30 +137,35 @@ export default function ParamBaremeIR() {
     showSnack("Modification enregistrée");
   }, [fetchData]);
 
+  // suppression
   const confirmDelete = async (id) => {
-    await deleteOne(activeTab, id);
+    await deleteOne(id);
     fetchData();
     showSnack("Suppression effectuée", "info");
   };
 
-  // découpage de période
+  // découpage de période (uniquement pour les tranches)
   const handleSplitClick = async (id) => {
-    const rec = await getOne(activeTab, id);
+    const rec = await getOne(id);
     setSplitForm(rec);
-    setSplitDate(rec.fin);
+    setSplitDate(rec.dateFin);
     setSplitOpen(true);
   };
   const confirmSplit = async () => {
     if (!splitForm) return;
-    // met à jour fin
-    await updateOne(activeTab, splitForm.id, { fin: splitDate });
-    // crée nouvelle période
+    // on met à jour la date de fin de la tranche actuelle
+    await updateOne(splitForm.id, { dateFin: splitDate });
+    // on crée la nouvelle tranche à partir du lendemain
     const next = new Date(splitDate);
     next.setDate(next.getDate() + 1);
     const dd = next.toISOString().slice(0, 10);
-    const initial = { ...splitForm, debut: dd, fin: splitForm.fin };
-    delete initial.id;
-    await createOne(activeTab, initial);
+    const nextTr = {
+      ...splitForm,
+      dateDebut: dd,
+      dateFin: splitForm.dateFin,
+    };
+    delete nextTr.id;
+    await createOne(nextTr);
     setSplitOpen(false);
     fetchData();
     showSnack("Période découpée");
@@ -226,7 +239,6 @@ export default function ParamBaremeIR() {
                 onChange={(e) => setSearch(e.target.value)}
                 sx={{ width: isMdUp ? 240 : "100%" }}
               />
-              {/* bouton "Créer" uniquement sur le 1er onglet */}
               {activeTab === "tranches" && (
                 <Button
                   variant="contained"
@@ -253,29 +265,32 @@ export default function ParamBaremeIR() {
                 </TableHead>
                 <TableBody>
                   {filtered.map((row) => (
-                    <TableRow key={row.id}>
+                    <TableRow key={row.idTranche || row.id}>
                       {fieldKeys[activeTab].map((f) => (
                         <TableCell key={f}>
-                          {f === "debut" || f === "fin"
+                          {f === "dateDebut" || f === "dateFin"
                             ? formatDateFR(row[f])
-                            : f === "taux"
-                            ? // Ajout du symbole % pour le taux IR
-                              `${row[f]} %`
+                            : f === "tauxIr"
+                            ? `${row[f]} %`
                             : row[f]}
                         </TableCell>
                       ))}
 
                       <TableCell>
-                        <IconButton
-                          size="small"
-                          onClick={() => handleSplitClick(row.id)}
-                        >
-                          <EditCalendarIcon fontSize="small" />
-                        </IconButton>
+                        {activeTab === "tranches" && (
+                          <IconButton
+                            size="small"
+                            onClick={() =>
+                              handleSplitClick(row.idTranche || row.id)
+                            }
+                          >
+                            <EditCalendarIcon fontSize="small" />
+                          </IconButton>
+                        )}
                         <IconButton
                           size="small"
                           onClick={() => {
-                            setEditId(row.id);
+                            setEditId(row.idTranche || row.id);
                             setEditOpen(true);
                           }}
                         >
@@ -284,7 +299,9 @@ export default function ParamBaremeIR() {
                         {activeTab === "tranches" && (
                           <IconButton
                             size="small"
-                            onClick={() => confirmDelete(row.id)}
+                            onClick={() =>
+                              confirmDelete(row.idTranche || row.id)
+                            }
                           >
                             <DeleteIcon fontSize="small" />
                           </IconButton>

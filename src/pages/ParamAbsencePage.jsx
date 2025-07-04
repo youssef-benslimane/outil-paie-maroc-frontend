@@ -35,12 +35,12 @@ import ConfigurateurSidebar from "../components/ConfigurateurSidebar.jsx";
 import CreateEntityDialog from "../components/CreateEntityDialog.jsx";
 import EditEntityDialog from "../components/EditEntityDialog.jsx";
 import {
-  getAll,
-  getOne,
-  createOne,
-  updateOne,
-  deleteOne,
-} from "../api/fakeAbsenceApi.js";
+  getAllTypeAbsences,
+  getTypeAbsenceById,
+  createTypeAbsence,
+  updateTypeAbsence,
+  deleteTypeAbsence,
+} from "../api/paramAbsenceApi.js";
 
 // Pour formater en JJ/MM/AAAA
 function formatDateFR(d) {
@@ -49,61 +49,29 @@ function formatDateFR(d) {
 }
 
 const drawerWidth = 240;
-
-// Comme un seul onglet, mais on garde la structure
-const tabConfig = [{ key: "typeAbsence", label: "Types d’absences" }];
-
-const columns = {
-  typeAbsence: [
-    "Nom",
-    "Code",
-    "Justificatif requis",
-    "Absence rémunérée",
-    "Impact solde",
-    "Date Début",
-    "Date Fin",
-  ],
-};
-
-const fieldKeys = {
-  typeAbsence: [
-    "nom",
-    "code",
-    "justificatif",
-    "remunere",
-    "impactSolde",
-    "debut",
-    "fin",
-  ],
-};
-
-const labelMap = {
-  nom: "Nom du type d’absence",
-  code: "Code",
-  justificatif: "Justificatif requis",
-  remunere: "Absence rémunérée",
-  impactSolde: "Impact solde de congé",
-  debut: "Date de début",
-  fin: "Date de fin",
-};
+const columns = [
+  "Code",
+  "Nom",
+  "Justificatif requis",
+  "Absence rémunérée",
+  "Impact solde",
+  "Date Début",
+  "Date Fin",
+];
 
 export default function ParamAbsencePage() {
   const theme = useTheme();
   const isMdUp = useMediaQuery(theme.breakpoints.up("md"));
   const location = useLocation();
-  const initialTab = location.state?.tab || "typeAbsence";
+  const initialTab = location.state?.tab || null;
 
-  const [activeTab] = useState(initialTab);
-  const [data, setData] = useState({ typeAbsence: [] });
+  const [data, setData] = useState([]);
   const [search, setSearch] = useState("");
-
-  // Snackbar feedback
   const [snack, setSnack] = useState({ open: false, msg: "", sev: "success" });
   const showSnack = (msg, sev = "success") =>
     setSnack({ open: true, msg, sev });
   const closeSnack = () => setSnack((s) => ({ ...s, open: false }));
 
-  // Dialogs create/edit/delete/split
   const [createOpen, setCreateOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [editId, setEditId] = useState(null);
@@ -120,8 +88,8 @@ export default function ParamAbsencePage() {
   const [origFin, setOrigFin] = useState("");
 
   const fetchData = useCallback(async () => {
-    const list = await getAll("typeAbsence");
-    setData({ typeAbsence: list });
+    const list = await getAllTypeAbsences();
+    setData(list);
   }, []);
 
   useEffect(() => {
@@ -129,8 +97,7 @@ export default function ParamAbsencePage() {
     window.history.replaceState({}, "");
   }, [fetchData]);
 
-  // Filtrage simple
-  const filtered = data.typeAbsence.filter((row) =>
+  const filtered = data.filter((row) =>
     Object.values(row).some((v) =>
       String(v).toLowerCase().includes(search.toLowerCase())
     )
@@ -150,7 +117,7 @@ export default function ParamAbsencePage() {
 
   // Suppression
   const confirmDelete = async () => {
-    await deleteOne("typeAbsence", deleteId);
+    await deleteTypeAbsence(deleteId);
     setDeleteOpen(false);
     fetchData();
     showSnack("Type d’absence supprimé", "info");
@@ -158,45 +125,49 @@ export default function ParamAbsencePage() {
 
   // Découpage de période
   const handleSplitClick = async (id) => {
-    const rec = await getOne("typeAbsence", id);
+    const rec = await getTypeAbsenceById(id);
     setSplitForm(rec);
-    setSplitDate(rec.fin);
+    setSplitDate(rec.dateFin?.split("T")[0] || "");
     setSplitOpen(true);
   };
   const confirmSplit = async () => {
     if (!splitForm) return;
-    const d0 = new Date(splitForm.debut),
-      d1 = new Date(splitForm.fin),
-      ds = new Date(splitDate);
+    const d0 = new Date(splitForm.dateDebut);
+    const d1 = new Date(splitForm.dateFin);
+    const ds = new Date(splitDate);
     if (ds <= d0 || ds >= d1) {
       return alert("Date hors période !");
     }
-    // on met à jour la fin
-    await updateOne("typeAbsence", splitForm.id, { fin: splitDate });
-    // préparation création seconde période
+    // on met à jour la fin de la première période
+    await updateTypeAbsence(splitForm.idTypeAbsence, { dateFin: splitDate });
+    // préparation de la seconde période
     const next = new Date(splitDate);
     next.setDate(next.getDate() + 1);
-    const yyyy = next.getFullYear(),
-      mm = String(next.getMonth() + 1).padStart(2, "0"),
-      dd = String(next.getDate()).padStart(2, "0");
+    const yyyy = next.getFullYear();
+    const mm = String(next.getMonth() + 1).padStart(2, "0");
+    const dd = String(next.getDate()).padStart(2, "0");
     setNewDebut(`${yyyy}-${mm}-${dd}`);
-    setOrigFin(splitForm.fin);
-    // on strip date pour formulaire
-    const keys = fieldKeys.typeAbsence.filter(
-      (k) => !["debut", "fin"].includes(k)
-    );
-    const init = {};
-    keys.forEach((k) => (init[k] = splitForm[k]));
-    setRemainForm(init);
+    setOrigFin(splitForm.dateFin?.split("T")[0] || "");
+
+    // Initialisation du formulaire pour la nouvelle période
+    setRemainForm({
+      nomAbsence: splitForm.nomAbsence,
+      codeAbsence: splitForm.codeAbsence,
+      justificatifRequis: splitForm.justificatifRequis,
+      absenceRemuneree: splitForm.absenceRemuneree,
+      impactSoldeConge: splitForm.impactSoldeConge,
+    });
+
     setSplitOpen(false);
     setRemainOpen(true);
     showSnack("Période découpée");
   };
   const confirmRemain = async () => {
-    await createOne("typeAbsence", {
+    await createTypeAbsence({
+      idTypeAbsence: `${splitForm.idTypeAbsence}-B`, // ou générez un nouvel ID selon votre logique
       ...remainForm,
-      debut: newDebut,
-      fin: origFin,
+      dateDebut: newDebut,
+      dateFin: origFin,
     });
     setRemainOpen(false);
     fetchData();
@@ -218,10 +189,9 @@ export default function ParamAbsencePage() {
         <Toolbar />
         <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
           <Typography variant="h4" align="center" gutterBottom>
-            Paramétrage des absences
+            Paramétrage des types d’absences
           </Typography>
 
-          {/* Actions */}
           <Box
             sx={{
               display: "flex",
@@ -248,13 +218,12 @@ export default function ParamAbsencePage() {
             </Button>
           </Box>
 
-          {/* Tableau */}
           <Paper>
             <Box sx={{ overflowX: "auto" }}>
               <Table size="small">
                 <TableHead>
                   <TableRow>
-                    {columns.typeAbsence.map((c) => (
+                    {columns.map((c) => (
                       <TableCell key={c}>{c}</TableCell>
                     ))}
                     <TableCell>Actions</TableCell>
@@ -262,29 +231,31 @@ export default function ParamAbsencePage() {
                 </TableHead>
                 <TableBody>
                   {filtered.map((row) => (
-                    <TableRow key={row.id}>
-                      {fieldKeys.typeAbsence.map((f) => (
-                        <TableCell key={f}>
-                          {f === "debut" || f === "fin"
-                            ? formatDateFR(row[f])
-                            : typeof row[f] === "boolean"
-                            ? row[f]
-                              ? "Oui"
-                              : "Non"
-                            : row[f]}
-                        </TableCell>
-                      ))}
+                    <TableRow key={row.idTypeAbsence}>
+                      <TableCell>{row.codeAbsence}</TableCell>
+                      <TableCell>{row.nomAbsence}</TableCell>
+                      <TableCell>
+                        {row.justificatifRequis ? "Oui" : "Non"}
+                      </TableCell>
+                      <TableCell>
+                        {row.absenceRemuneree ? "Oui" : "Non"}
+                      </TableCell>
+                      <TableCell>
+                        {row.impactSoldeConge ? "Oui" : "Non"}
+                      </TableCell>
+                      <TableCell>{formatDateFR(row.dateDebut)}</TableCell>
+                      <TableCell>{formatDateFR(row.dateFin)}</TableCell>
                       <TableCell>
                         <IconButton
                           size="small"
-                          onClick={() => handleSplitClick(row.id)}
+                          onClick={() => handleSplitClick(row.idTypeAbsence)}
                         >
                           <EditCalendarIcon fontSize="small" />
                         </IconButton>
                         <IconButton
                           size="small"
                           onClick={() => {
-                            setEditId(row.id);
+                            setEditId(row.idTypeAbsence);
                             setEditOpen(true);
                           }}
                         >
@@ -293,7 +264,7 @@ export default function ParamAbsencePage() {
                         <IconButton
                           size="small"
                           onClick={() => {
-                            setDeleteId(row.id);
+                            setDeleteId(row.idTypeAbsence);
                             setDeleteOpen(true);
                           }}
                         >
@@ -375,39 +346,52 @@ export default function ParamAbsencePage() {
         <DialogTitle>Modifier la nouvelle période</DialogTitle>
         <DialogContent dividers>
           <Stack spacing={2} sx={{ mt: 1 }}>
-            {["nom", "code", "justificatif", "remunere", "impactSolde"].map(
-              (key) =>
-                key.startsWith("just") ||
-                key.startsWith("remu") ||
-                key.startsWith("impact") ? (
-                  <FormControlLabel
-                    key={key}
-                    control={
-                      <Switch
-                        name={key}
-                        checked={remainForm[key] || false}
-                        onChange={(e) =>
-                          setRemainForm((f) => ({
-                            ...f,
-                            [key]: e.target.checked,
-                          }))
-                        }
-                      />
-                    }
-                    label={labelMap[key]}
-                  />
-                ) : (
-                  <TextField
-                    key={key}
-                    fullWidth
-                    label={labelMap[key]}
-                    name={key}
-                    value={remainForm[key] || ""}
-                    onChange={(e) =>
-                      setRemainForm((f) => ({ ...f, [key]: e.target.value }))
-                    }
-                  />
-                )
+            {[
+              { key: "nomAbsence", label: "Nom du type d’absence" },
+              { key: "codeAbsence", label: "Code" },
+              {
+                key: "justificatifRequis",
+                label: "Justificatif requis",
+                type: "switch",
+              },
+              {
+                key: "absenceRemuneree",
+                label: "Absence rémunérée",
+                type: "switch",
+              },
+              {
+                key: "impactSoldeConge",
+                label: "Impact solde de congé",
+                type: "switch",
+              },
+            ].map(({ key, label, type }) =>
+              type === "switch" ? (
+                <FormControlLabel
+                  key={key}
+                  control={
+                    <Switch
+                      checked={remainForm[key] || false}
+                      onChange={(e) =>
+                        setRemainForm((f) => ({
+                          ...f,
+                          [key]: e.target.checked,
+                        }))
+                      }
+                    />
+                  }
+                  label={label}
+                />
+              ) : (
+                <TextField
+                  key={key}
+                  fullWidth
+                  label={label}
+                  value={remainForm[key] || ""}
+                  onChange={(e) =>
+                    setRemainForm((f) => ({ ...f, [key]: e.target.value }))
+                  }
+                />
+              )
             )}
           </Stack>
         </DialogContent>

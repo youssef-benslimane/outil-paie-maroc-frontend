@@ -1,10 +1,9 @@
-// src/api/paramCotisationsApi.js
+// src/api/paramPrimeIndemniteApi.js
 import axios from "axios";
 
 // Mapping des clés entité → endpoint REST
 const entityApiMap = {
-  typeCot: "types-cotisation",
-  cotisation: "cotisations",
+  typePrime: "types-prime",
 };
 
 const resolveEntity = (entity) => entityApiMap[entity] || entity;

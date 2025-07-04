@@ -44,78 +44,75 @@ import {
   createOne,
   updateOne,
   deleteOne,
-} from "../api/fakePrimeApi.js";
+} from "../api/paramPrimeIndemniteApi.js";
 
-// format JJ/MM/AAAA
-function formatDateFR(d) {
-  return d ? new Date(d).toLocaleDateString("fr-FR") : "";
+// formateur JJ/MM/AAAA
+function formatDateFR(date) {
+  return date ? new Date(date).toLocaleDateString("fr-FR") : "";
 }
 
 const drawerWidth = 240;
+const tabKey = "typePrime"; // résout vers /api/types-prime
 
-// un seul onglet « Primes & Indemnités »
-const tabKey = "prime";
+// colonnes du tableau
 const columns = [
-  "Nom",
-  "Code interne",
-  "Type montant",
+  "Code",
+  "Type",
+  "Unité",
+  "Nombre",
   "Montant fixe",
   "Taux (%)",
-  "Rubrique source",
-  "Valeur unitaire",
-  "Soumis cotisation",
-  "Soumis IR",
-  "Date Début",
-  "Date Fin",
+  "CNSS",
+  "AMO",
+  "CIMR",
+  "IR",
+  "Date début",
+  "Date fin",
+  "Actions",
 ];
 
+// clés des champs (dans l'ordre des colonnes)
 const fieldKeys = [
-  "nom",
-  "code",
-  "typeMontant",
+  "codeTypePrime",
+  "type",
+  "unite",
+  "nombre",
   "montantFixe",
-  "taux",
-  "rubriqueSource",
-  "valeurUnitaire",
-  "soumisCotisation",
+  "tauxPourcentage",
+  "soumisCNSS",
+  "soumisAMO",
+  "soumisCIMR",
   "soumisIR",
-  "debut",
-  "fin",
+  "dateDebut",
+  "dateFin",
 ];
 
+// étiquettes pour les formulaires
 const labelMap = {
-  nom: "Nom de la prime/indemnité",
-  code: "Code interne",
-  typeMontant: "Type de montant",
+  codeTypePrime: "Code",
+  type: "Type",
+  unite: "Unité",
+  nombre: "Nombre",
   montantFixe: "Montant fixe",
-  taux: "Taux (%)",
-  rubriqueSource: "Rubrique source",
-  valeurUnitaire: "Valeur unitaire",
-  soumisCotisation: "Soumis à cotisation",
-  soumisIR: "Soumis à l’IR",
-  debut: "Date de début",
-  fin: "Date de fin",
+  tauxPourcentage: "Taux (%)",
+  soumisCNSS: "Soumis CNSS",
+  soumisAMO: "Soumis AMO",
+  soumisCIMR: "Soumis CIMR",
+  soumisIR: "Soumis IR",
+  dateDebut: "Date début",
+  dateFin: "Date fin",
 };
 
-// options du select “Type de montant”
-const typeOptions = ["Nombre", "Montant", "Pourcentage"];
-// options pour rubriqueSource — à adapter selon votre domaine
-const rubriqueOptions = ["Salaire de base", "Primes précédentes"];
-
+// options pour les selects
+const uniteOptions = ["Montant fixe", "Pourcentage", "Nombre"];
 export default function ParamPrimePage() {
   const theme = useTheme();
   const isMdUp = useMediaQuery(theme.breakpoints.up("md"));
-  const location = useLocation();
 
   // états
   const [data, setData] = useState([]);
   const [search, setSearch] = useState("");
-
-  // snackbar
   const [snack, setSnack] = useState({ open: false, msg: "", sev: "success" });
-  const showSnack = (msg, sev = "success") =>
-    setSnack({ open: true, msg, sev });
-  const closeSnack = () => setSnack((s) => ({ ...s, open: false }));
 
   // dialogs
   const [createOpen, setCreateOpen] = useState(false);
@@ -131,7 +128,11 @@ export default function ParamPrimePage() {
   const [newDebut, setNewDebut] = useState("");
   const [origFin, setOrigFin] = useState("");
 
-  // chargement
+  const showSnack = (msg, sev = "success") =>
+    setSnack({ open: true, msg, sev });
+  const closeSnack = () => setSnack((s) => ({ ...s, open: false }));
+
+  // chargement des données
   const fetchData = useCallback(async () => {
     const list = await getAll(tabKey);
     setData(list);
@@ -139,7 +140,6 @@ export default function ParamPrimePage() {
 
   useEffect(() => {
     fetchData();
-    window.history.replaceState({}, "");
   }, [fetchData]);
 
   // filtrage
@@ -149,51 +149,44 @@ export default function ParamPrimePage() {
     )
   );
 
-  // create callback
+  // callbacks CRUD
   const onCreated = useCallback(() => {
     fetchData();
-    showSnack("Prime créée");
+    showSnack("Type prime créé");
   }, [fetchData]);
 
-  // update callback
   const onUpdated = useCallback(() => {
     fetchData();
-    showSnack("Prime modifiée");
+    showSnack("Type prime modifié");
   }, [fetchData]);
 
-  // delete confirm
   const confirmDelete = async () => {
     await deleteOne(tabKey, deleteId);
     setDeleteOpen(false);
     fetchData();
-    showSnack("Prime supprimée", "info");
+    showSnack("Type prime supprimé", "info");
   };
 
   // split period
-  const handleSplitClick = async (id) => {
+  const handleSplit = async (id) => {
     const rec = await getOne(tabKey, id);
     setSplitForm(rec);
-    setSplitDate(rec.fin);
+    setSplitDate(rec.dateFin);
     setSplitOpen(true);
   };
   const confirmSplit = async () => {
     if (!splitForm) return;
-    const d0 = new Date(splitForm.debut),
-      d1 = new Date(splitForm.fin),
+    const d0 = new Date(splitForm.dateDebut),
+      d1 = new Date(splitForm.dateFin),
       ds = new Date(splitDate);
-    if (ds <= d0 || ds >= d1) {
-      return alert("Date hors période !");
-    }
-    await updateOne(tabKey, splitForm.id, { fin: splitDate });
+    if (ds <= d0 || ds >= d1) return alert("Date hors période !");
+    // on ferme et on prépare la seconde partie
+    await updateOne(tabKey, splitForm.idTypePrime, { dateFin: splitDate });
     const next = new Date(splitDate);
     next.setDate(next.getDate() + 1);
-    const yyyy = next.getFullYear(),
-      mm = String(next.getMonth() + 1).padStart(2, "0"),
-      dd = String(next.getDate()).padStart(2, "0");
-    setNewDebut(`${yyyy}-${mm}-${dd}`);
-    setOrigFin(splitForm.fin);
-    // prépare remainForm sans dates
-    const keys = fieldKeys.filter((k) => k !== "debut" && k !== "fin");
+    setNewDebut(next.toISOString().slice(0, 10));
+    setOrigFin(splitForm.dateFin);
+    const keys = fieldKeys.filter((k) => k !== "dateDebut" && k !== "dateFin");
     const init = {};
     keys.forEach((k) => (init[k] = splitForm[k]));
     setRemainForm(init);
@@ -204,8 +197,8 @@ export default function ParamPrimePage() {
   const confirmRemain = async () => {
     await createOne(tabKey, {
       ...remainForm,
-      debut: newDebut,
-      fin: origFin,
+      dateDebut: newDebut,
+      dateFin: origFin,
     });
     setRemainOpen(false);
     fetchData();
@@ -215,7 +208,6 @@ export default function ParamPrimePage() {
   return (
     <Box sx={{ display: "flex" }}>
       <ConfigurateurSidebar />
-
       <Box
         component="main"
         sx={{
@@ -227,10 +219,10 @@ export default function ParamPrimePage() {
         <Toolbar />
         <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
           <Typography variant="h4" align="center" gutterBottom>
-            Paramétrage des Primes & Indemnités
+            Paramétrage des Types de Prime & Indemnité
           </Typography>
 
-          {/* Actions */}
+          {/* barre d'actions */}
           <Box
             sx={{
               display: "flex",
@@ -257,7 +249,7 @@ export default function ParamPrimePage() {
             </Button>
           </Box>
 
-          {/* Tableau */}
+          {/* tableau */}
           <Paper>
             <Box sx={{ overflowX: "auto" }}>
               <Table size="small">
@@ -266,34 +258,33 @@ export default function ParamPrimePage() {
                     {columns.map((c) => (
                       <TableCell key={c}>{c}</TableCell>
                     ))}
-                    <TableCell>Actions</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {filtered.map((row) => (
-                    <TableRow key={row.id}>
+                    <TableRow key={row.idTypePrime}>
                       {fieldKeys.map((f) => (
                         <TableCell key={f}>
-                          {f === "debut" || f === "fin"
+                          {["dateDebut", "dateFin"].includes(f)
                             ? formatDateFR(row[f])
                             : typeof row[f] === "boolean"
-                            ? row[f]
+                            ? row[f] === true
                               ? "Oui"
                               : "Non"
-                            : row[f]}
+                            : row[f] ?? "Non"}
                         </TableCell>
                       ))}
                       <TableCell>
                         <IconButton
                           size="small"
-                          onClick={() => handleSplitClick(row.id)}
+                          onClick={() => handleSplit(row.idTypePrime)}
                         >
                           <EditCalendarIcon fontSize="small" />
                         </IconButton>
                         <IconButton
                           size="small"
                           onClick={() => {
-                            setEditId(row.id);
+                            setEditId(row.idTypePrime);
                             setEditOpen(true);
                           }}
                         >
@@ -302,7 +293,7 @@ export default function ParamPrimePage() {
                         <IconButton
                           size="small"
                           onClick={() => {
-                            setDeleteId(row.id);
+                            setDeleteId(row.idTypePrime);
                             setDeleteOpen(true);
                           }}
                         >
@@ -318,7 +309,7 @@ export default function ParamPrimePage() {
         </Container>
       </Box>
 
-      {/* Create / Edit */}
+      {/* Create / Edit dialogs */}
       <CreateEntityDialog
         open={createOpen}
         entity={tabKey}
@@ -333,10 +324,10 @@ export default function ParamPrimePage() {
         onUpdated={onUpdated}
       />
 
-      {/* Delete */}
+      {/* Delete confirmation */}
       <Dialog open={deleteOpen} onClose={() => setDeleteOpen(false)}>
         <DialogTitle>Confirmer la suppression</DialogTitle>
-        <DialogContent>Voulez-vous supprimer cette prime ?</DialogContent>
+        <DialogContent>Voulez-vous supprimer ce type de prime ?</DialogContent>
         <DialogActions>
           <Button onClick={() => setDeleteOpen(false)}>Annuler</Button>
           <Button color="error" variant="contained" onClick={confirmDelete}>
@@ -345,7 +336,7 @@ export default function ParamPrimePage() {
         </DialogActions>
       </Dialog>
 
-      {/* Split */}
+      {/* Split period dialog */}
       <Dialog
         open={splitOpen}
         onClose={() => setSplitOpen(false)}
@@ -355,11 +346,11 @@ export default function ParamPrimePage() {
         <DialogTitle>Délimiter la période</DialogTitle>
         <DialogContent>
           <Typography gutterBottom>
-            Choisissez la date de fin de la première partie
+            Choisissez la nouvelle date de fin de la période
           </Typography>
           <TextField
             fullWidth
-            label="Date de fin"
+            label="Date fin"
             type="date"
             InputLabelProps={{ shrink: true }}
             value={splitDate}
@@ -374,7 +365,7 @@ export default function ParamPrimePage() {
         </DialogActions>
       </Dialog>
 
-      {/* Remain */}
+      {/* Remain period dialog */}
       <Dialog
         open={remainOpen}
         onClose={() => setRemainOpen(false)}
@@ -384,95 +375,98 @@ export default function ParamPrimePage() {
         <DialogTitle>Modifier la nouvelle période</DialogTitle>
         <DialogContent dividers>
           <Stack spacing={2} sx={{ mt: 1 }}>
-            {[
-              "nom",
-              "code",
-              "typeMontant",
-              "montantFixe",
-              "taux",
-              "rubriqueSource",
-              "valeurUnitaire",
-              "soumisCotisation",
-              "soumisIR",
-            ].map((key) => {
-              // switch on field type
-              if (key === "typeMontant") {
-                return (
-                  <FormControl fullWidth key={key}>
-                    <InputLabel>{labelMap[key]}</InputLabel>
-                    <Select
-                      name={key}
-                      value={remainForm[key] || ""}
-                      label={labelMap[key]}
-                      onChange={(e) =>
-                        setRemainForm((f) => ({ ...f, [key]: e.target.value }))
+            {fieldKeys
+              .filter((k) => k !== "dateDebut" && k !== "dateFin")
+              .map((key) => {
+                // boolean switches
+                if (
+                  [
+                    "soumisCNSS",
+                    "soumisAMO",
+                    "soumisCIMR",
+                    "soumisIR",
+                  ].includes(key)
+                ) {
+                  return (
+                    <FormControlLabel
+                      key={key}
+                      control={
+                        <Switch
+                          name={key}
+                          checked={!!remainForm[key]}
+                          onChange={(e) =>
+                            setRemainForm((f) => ({
+                              ...f,
+                              [key]: e.target.checked,
+                            }))
+                          }
+                        />
                       }
-                    >
-                      {typeOptions.map((opt) => (
-                        <MenuItem key={opt} value={opt}>
-                          {opt}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                );
-              }
-              if (["soumisCotisation", "soumisIR"].includes(key)) {
-                return (
-                  <FormControlLabel
-                    key={key}
-                    control={
-                      <Switch
+                      label={labelMap[key]}
+                    />
+                  );
+                }
+                // select unité
+                if (key === "unite") {
+                  return (
+                    <FormControl fullWidth key={key}>
+                      <InputLabel>{labelMap[key]}</InputLabel>
+                      <Select
                         name={key}
-                        checked={!!remainForm[key]}
+                        value={remainForm[key] || ""}
+                        label={labelMap[key]}
                         onChange={(e) =>
                           setRemainForm((f) => ({
                             ...f,
-                            [key]: e.target.checked,
+                            [key]: e.target.value,
                           }))
                         }
-                      />
+                      >
+                        {uniteOptions.map((opt) => (
+                          <MenuItem key={opt} value={opt}>
+                            {opt}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  );
+                }
+                // number/text fields
+                return (
+                  <TextField
+                    key={key}
+                    fullWidth
+                    type={
+                      ["nombre", "montantFixe", "tauxPourcentage"].includes(key)
+                        ? "number"
+                        : "text"
                     }
                     label={labelMap[key]}
+                    name={key}
+                    value={remainForm[key] || ""}
+                    onChange={(e) =>
+                      setRemainForm((f) => ({ ...f, [key]: e.target.value }))
+                    }
                   />
                 );
-              }
-              // default numeric/text
-              return (
-                <TextField
-                  key={key}
-                  fullWidth
-                  type={
-                    ["montantFixe", "taux", "valeurUnitaire"].includes(key)
-                      ? "number"
-                      : "text"
-                  }
-                  label={labelMap[key]}
-                  name={key}
-                  InputLabelProps={
-                    ["montantFixe", "taux", "valeurUnitaire"].includes(key)
-                      ? undefined
-                      : key === "rubriqueSource"
-                      ? undefined
-                      : key === "nom" || key === "code"
-                      ? undefined
-                      : undefined
-                  }
-                  select={key === "rubriqueSource"}
-                  value={remainForm[key] || ""}
-                  onChange={(e) =>
-                    setRemainForm((f) => ({ ...f, [key]: e.target.value }))
-                  }
-                >
-                  {key === "rubriqueSource" &&
-                    rubriqueOptions.map((opt) => (
-                      <MenuItem key={opt} value={opt}>
-                        {opt}
-                      </MenuItem>
-                    ))}
-                </TextField>
-              );
-            })}
+              })}
+            {/* dates en lecture seule */}
+            <TextField
+              fullWidth
+              label="Date début"
+              type="date"
+              value={newDebut}
+              InputLabelProps={{ shrink: true }}
+              disabled
+            />
+            <TextField
+              fullWidth
+              label="Date fin originale"
+              type="date"
+              value={origFin}
+              InputLabelProps={{ shrink: true }}
+              disabled
+            />
           </Stack>
         </DialogContent>
         <DialogActions>
